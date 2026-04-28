@@ -16,7 +16,6 @@ Build production-grade frontend for HealthBridge.
 - TypeScript strict mode
 - Tailwind
 - Shadcn
-- TanStack Query
 - NextAuth
 - RHF + Zod
 
