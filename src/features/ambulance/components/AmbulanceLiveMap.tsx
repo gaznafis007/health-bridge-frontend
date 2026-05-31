@@ -20,12 +20,14 @@ interface AmbulanceLiveMapProps {
   pickupLatLng: LatLng;
   destinationLatLng?: LatLng | null;
   ambulanceLatLng?: LatLng | null;
+  trailPoints?: LatLng[];
 }
 
 export function AmbulanceLiveMap({
   pickupLatLng,
   destinationLatLng,
   ambulanceLatLng,
+  trailPoints,
 }: AmbulanceLiveMapProps) {
   return (
     <div className="h-[320px] overflow-hidden rounded-2xl border border-[var(--color-border)] sm:h-[420px]">
@@ -33,6 +35,7 @@ export function AmbulanceLiveMap({
         pickupLatLng={pickupLatLng}
         destinationLatLng={destinationLatLng}
         ambulanceLatLng={ambulanceLatLng}
+        trailPoints={trailPoints}
       />
     </div>
   );

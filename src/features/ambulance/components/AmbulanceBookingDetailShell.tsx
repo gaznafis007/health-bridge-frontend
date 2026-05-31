@@ -14,10 +14,12 @@ import {
   cancelAmbulanceBooking,
   getAmbulanceBooking,
   getAmbulanceLiveLocation,
+  getAmbulanceLocationTrail,
 } from "@/lib/ambulance/ambulance.api";
 import type {
   AmbulanceBooking,
   AmbulanceLiveLocation,
+  LatLng,
 } from "@/lib/ambulance/ambulance.types";
 import {
   getApiErrorMessage,
@@ -55,6 +57,7 @@ export function AmbulanceBookingDetailShell({
   const [liveLocation, setLiveLocation] = useState<AmbulanceLiveLocation | null>(
     null,
   );
+  const [trailPoints, setTrailPoints] = useState<LatLng[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -116,9 +119,15 @@ export function AmbulanceBookingDetailShell({
 
     async function pollLocation() {
       try {
-        const location = await getAmbulanceLiveLocation(token, bookingId);
+        const [location, trail] = await Promise.all([
+          getAmbulanceLiveLocation(token, bookingId),
+          getAmbulanceLocationTrail(token, bookingId),
+        ]);
         if (isMounted) {
           setLiveLocation(location);
+          setTrailPoints(
+            trail.points.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+          );
         }
       } catch {
         // Location may not be available yet — ignore until next poll
@@ -284,6 +293,7 @@ export function AmbulanceBookingDetailShell({
             }}
             destinationLatLng={destinationLatLng}
             ambulanceLatLng={ambulanceLatLng}
+            trailPoints={trailPoints}
           />
         </section>
 

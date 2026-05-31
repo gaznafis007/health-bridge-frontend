@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Spinner } from "@/components/ui/Spinner";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { checkout } from "@/features/pharmacy/lib/pharmacy.api";
 import type { ApiError, Cart } from "@/features/pharmacy/lib/pharmacy.types";
 import { generateIdempotencyKey } from "@/features/pharmacy/lib/pharmacy.utils";
@@ -29,6 +30,7 @@ const phonePattern = /^\+?[1-9]\d{7,14}$/;
 
 export function CheckoutForm({ cart, sessionId, onSuccess }: CheckoutFormProps) {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [form, setForm] = useState<FormState>({
     fullName: "",
     phone: "",
@@ -53,16 +55,22 @@ export function CheckoutForm({ cart, sessionId, onSuccess }: CheckoutFormProps) 
     setIsSubmitting(true);
 
     try {
-      const order = await checkout({
-        guestSessionId: sessionId,
-        paymentMethod: form.paymentMethod,
-        deliveryAddress: `Recipient: ${form.fullName.trim()}\nAddress: ${form.address.trim()}`,
-        deliveryPhone: form.phone.trim(),
-        idempotencyKey: generateIdempotencyKey(),
-      });
+      const order = await checkout(
+        {
+          guestSessionId: sessionId,
+          paymentMethod: form.paymentMethod,
+          deliveryAddress: `Recipient: ${form.fullName.trim()}\nAddress: ${form.address.trim()}`,
+          deliveryPhone: form.phone.trim(),
+          idempotencyKey: generateIdempotencyKey(),
+        },
+        accessToken ?? undefined,
+      );
 
       onSuccess();
-      router.push(`/pharmacy/orders/${order.id}?session=${encodeURIComponent(sessionId)}`);
+      const trackingUrl = accessToken
+        ? `/pharmacy/orders/${order.id}`
+        : `/pharmacy/orders/${order.id}?session=${encodeURIComponent(sessionId)}`;
+      router.push(trackingUrl);
     } catch (error) {
       const apiError = error as ApiError;
       const nextFieldErrors: FieldErrors = {};

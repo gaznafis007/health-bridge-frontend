@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import {
   MapContainer,
   Marker,
+  Polyline,
   Popup,
   TileLayer,
   useMap,
@@ -18,6 +19,7 @@ interface AmbulanceMapInnerProps {
   pickupLatLng: LatLng;
   destinationLatLng?: LatLng | null;
   ambulanceLatLng?: LatLng | null;
+  trailPoints?: LatLng[];
 }
 
 const pickupIcon = createIcon("#0ea5e9");
@@ -28,6 +30,7 @@ export default function AmbulanceMapInner({
   pickupLatLng,
   destinationLatLng,
   ambulanceLatLng,
+  trailPoints = [],
 }: AmbulanceMapInnerProps) {
   const center: [number, number] = [
     pickupLatLng.lat,
@@ -50,7 +53,14 @@ export default function AmbulanceMapInner({
         pickupLatLng={pickupLatLng}
         destinationLatLng={destinationLatLng}
         ambulanceLatLng={ambulanceLatLng}
+        trailPoints={trailPoints}
       />
+      {trailPoints.length > 1 ? (
+        <Polyline
+          positions={trailPoints.map((p) => [p.lat, p.lng] as [number, number])}
+          pathOptions={{ color: "#22c55e", weight: 4, opacity: 0.7 }}
+        />
+      ) : null}
       <Marker position={[pickupLatLng.lat, pickupLatLng.lng]} icon={pickupIcon}>
         <Popup>Pickup location</Popup>
       </Marker>
@@ -78,10 +88,12 @@ function FitBounds({
   pickupLatLng,
   destinationLatLng,
   ambulanceLatLng,
+  trailPoints = [],
 }: {
   pickupLatLng: LatLng;
   destinationLatLng?: LatLng | null;
   ambulanceLatLng?: LatLng | null;
+  trailPoints?: LatLng[];
 }) {
   const map = useMap();
 
@@ -98,13 +110,17 @@ function FitBounds({
       points.push([ambulanceLatLng.lat, ambulanceLatLng.lng]);
     }
 
+    for (const point of trailPoints) {
+      points.push([point.lat, point.lng]);
+    }
+
     if (points.length === 1) {
       map.setView(points[0], 14);
       return;
     }
 
     map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
-  }, [ambulanceLatLng, destinationLatLng, map, pickupLatLng]);
+  }, [ambulanceLatLng, destinationLatLng, map, pickupLatLng, trailPoints]);
 
   return null;
 }

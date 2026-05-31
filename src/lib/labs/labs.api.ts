@@ -132,3 +132,113 @@ export function getPublicReport(
     { cache: "no-store" },
   );
 }
+
+export interface CreateLabCenterPayload {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone: string;
+  email: string;
+}
+
+export function createLabCenter(
+  accessToken: string,
+  payload: CreateLabCenterPayload,
+): Promise<LabCenter> {
+  return apiRequest<LabCenter>(`${LAB_PREFIX}/centers`, {
+    method: "POST",
+    accessToken,
+    body: payload,
+  });
+}
+
+export function listAllBookings(
+  accessToken: string,
+  skip = 0,
+  take = 20,
+): Promise<LabBookingsPage> {
+  const params = new URLSearchParams({
+    skip: String(skip),
+    take: String(take),
+  });
+  return apiRequest<LabBookingsPage>(`${LAB_PREFIX}/bookings?${params}`, {
+    accessToken,
+    cache: "no-store",
+  });
+}
+
+export function confirmBookingPayment(
+  accessToken: string,
+  bookingId: string,
+): Promise<LabBooking> {
+  return apiRequest<LabBooking>(
+    `${LAB_PREFIX}/bookings/${bookingId}/payment/confirm`,
+    { method: "PATCH", accessToken },
+  );
+}
+
+export function collectSample(
+  accessToken: string,
+  bookingId: string,
+): Promise<LabBooking> {
+  return apiRequest<LabBooking>(
+    `${LAB_PREFIX}/bookings/${bookingId}/sample/collect`,
+    { method: "PATCH", accessToken },
+  );
+}
+
+export function processSample(
+  accessToken: string,
+  bookingId: string,
+): Promise<LabBooking> {
+  return apiRequest<LabBooking>(
+    `${LAB_PREFIX}/bookings/${bookingId}/sample/process`,
+    { method: "PATCH", accessToken },
+  );
+}
+
+export function completeSample(
+  accessToken: string,
+  bookingId: string,
+): Promise<LabBooking> {
+  return apiRequest<LabBooking>(
+    `${LAB_PREFIX}/bookings/${bookingId}/sample/complete`,
+    { method: "PATCH", accessToken },
+  );
+}
+
+export function uploadBookingReport(
+  accessToken: string,
+  bookingId: string,
+  file: File,
+  testId?: string,
+): Promise<LabReport> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (testId) formData.append("testId", testId);
+
+  return apiRequest<LabReport>(`${LAB_PREFIX}/bookings/${bookingId}/reports`, {
+    method: "POST",
+    accessToken,
+    body: formData,
+  });
+}
+
+export function listAdminReports(accessToken: string): Promise<LabReport[]> {
+  return apiRequest<LabReport[]>(`${LAB_PREFIX}/reports`, {
+    accessToken,
+    cache: "no-store",
+  });
+}
+
+export function deliverReport(
+  accessToken: string,
+  reportId: string,
+): Promise<LabReport> {
+  return apiRequest<LabReport>(`${LAB_PREFIX}/reports/${reportId}/deliver`, {
+    method: "PATCH",
+    accessToken,
+  });
+}

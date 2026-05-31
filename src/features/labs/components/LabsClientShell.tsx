@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { LabCenterCard } from "@/features/labs/components/LabCenterCard";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { getCenters } from "@/lib/labs/labs.api";
+import { getCenters, searchTests } from "@/lib/labs/labs.api";
 import type { LabCenter } from "@/lib/labs/labs.types";
 import { getApiErrorMessage, getApiErrorStatus } from "@/lib/api/errors";
 
@@ -16,6 +16,11 @@ export function LabsClientShell() {
   const router = useRouter();
   const { accessToken, isLoading: isAuthLoading } = useAuth();
   const [centers, setCenters] = useState<LabCenter[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    import("@/lib/labs/labs.types").LabTest[] | null
+  >(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +96,57 @@ export function LabsClientShell() {
               My bookings
             </Link>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
+          <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
+            Search tests across centers
+          </label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="e.g. CBC, thyroid"
+              className="min-h-11 flex-1 rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={!searchQuery.trim() || isSearching || !accessToken}
+              onClick={async () => {
+                if (!accessToken) return;
+                setIsSearching(true);
+                try {
+                  const results = await searchTests(accessToken, searchQuery.trim());
+                  setSearchResults(results);
+                } finally {
+                  setIsSearching(false);
+                }
+              }}
+              className="inline-flex min-h-11 items-center rounded-xl bg-[var(--color-primary)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {isSearching ? "Searching..." : "Search"}
+            </button>
+          </div>
+          {searchResults ? (
+            <ul className="mt-4 space-y-2">
+              {searchResults.length === 0 ? (
+                <li className="text-sm text-[var(--color-text-secondary)]">
+                  No tests matched your search.
+                </li>
+              ) : (
+                searchResults.map((test) => (
+                  <li
+                    key={test.id}
+                    className="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm"
+                  >
+                    <span className="font-medium">{test.name}</span>
+                    <span className="text-[var(--color-text-secondary)]"> — ৳{test.price}</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          ) : null}
         </div>
 
         {error ? <ErrorMessage message={error} /> : null}

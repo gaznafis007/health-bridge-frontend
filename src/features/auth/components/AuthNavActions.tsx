@@ -7,6 +7,11 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import {
+  getDashboardPathForRole,
+  getPrimaryNavHrefForRole,
+  getPrimaryNavLabelForRole,
+} from "@/lib/auth/dashboard-routes";
 
 export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
@@ -54,8 +59,32 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
     }
   }
 
+  const primaryHref = getPrimaryNavHrefForRole(user.role);
+  const primaryLabel = getPrimaryNavLabelForRole(user.role);
+
   return (
     <>
+      <Link
+        href={getDashboardPathForRole(user.role)}
+        onClick={onNavigate}
+        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-slate-50"
+      >
+        Dashboard
+      </Link>
+      <Link
+        href={primaryHref}
+        onClick={onNavigate}
+        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
+      >
+        {primaryLabel}
+      </Link>
+      <Link
+        href="/account"
+        onClick={onNavigate}
+        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:bg-slate-50"
+      >
+        Account
+      </Link>
       <div className="inline-flex min-h-11 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2">
         <span className="text-sm font-semibold text-[var(--color-text-primary)]">
           {user.firstName}
