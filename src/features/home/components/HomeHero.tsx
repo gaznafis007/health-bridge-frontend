@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HomeHeroActions } from "@/features/home/components/HomeHeroActions";
 
 export function HomeHero() {
   return (
@@ -15,20 +15,7 @@ export function HomeHero() {
             Teleconsultation, online pharmacy, lab tests, and emergency services
             all in one place.
           </p>
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <Link
-              href="/appointments"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
-            >
-              Book a Consultation
-            </Link>
-            <Link
-              href="/pharmacy"
-              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-[var(--color-secondary)] px-6 py-3 text-sm font-semibold text-[var(--color-secondary)] transition hover:bg-emerald-50"
-            >
-              Order Medicine
-            </Link>
-          </div>
+          <HomeHeroActions />
         </div>
 
         <div className="animate-float-gentle relative mx-auto w-full max-w-xl">

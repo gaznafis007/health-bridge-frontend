@@ -3,7 +3,18 @@ import type { NextRequest } from "next/server";
 
 import { REFRESH_TOKEN_COOKIE } from "@/lib/auth/auth.constants";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/appointments", "/lab-tests", "/ambulance"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/account",
+  "/notifications",
+  "/appointments",
+  "/lab-tests",
+  "/ambulance",
+  "/pharmacy/orders",
+  "/admin",
+  "/dispatch",
+  "/driver",
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,8 +43,14 @@ export const config = {
   matcher: [
     "/auth/:path*",
     "/dashboard/:path*",
+    "/account/:path*",
+    "/notifications/:path*",
     "/appointments/:path*",
     "/lab-tests/:path*",
     "/ambulance/:path*",
+    "/pharmacy/orders/:path*",
+    "/admin/:path*",
+    "/dispatch/:path*",
+    "/driver/:path*",
   ],
 };

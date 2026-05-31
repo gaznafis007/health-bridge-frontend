@@ -72,19 +72,55 @@ export function removeCartItem(
   });
 }
 
-export function checkout(payload: CheckoutPayload): Promise<Order> {
+export function checkout(
+  payload: CheckoutPayload,
+  accessToken?: string,
+): Promise<Order> {
   return apiRequest<Order>(`${PHARMACY_PREFIX}/checkout`, {
     method: "POST",
     body: payload,
+    accessToken,
   });
 }
 
-export function getOrder(orderId: string, guestSessionId: string): Promise<Order> {
-  const searchParams = new URLSearchParams({ guestSessionId });
-  return apiRequest<Order>(
-    `${PHARMACY_PREFIX}/orders/${orderId}?${searchParams.toString()}`,
-    {
-      cache: "no-store",
-    },
-  );
+export interface OrdersPage {
+  items: Order[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
+export function getMyOrders(
+  accessToken: string,
+  skip = 0,
+  take = 20,
+): Promise<OrdersPage> {
+  const params = new URLSearchParams({
+    skip: String(skip),
+    take: String(take),
+  });
+  return apiRequest<OrdersPage>(`${PHARMACY_PREFIX}/orders/me?${params}`, {
+    accessToken,
+    cache: "no-store",
+  });
+}
+
+export function getOrder(orderId: string, guestSessionId?: string): Promise<Order> {
+  const searchParams = guestSessionId
+    ? new URLSearchParams({ guestSessionId })
+    : null;
+  const suffix = searchParams ? `?${searchParams}` : "";
+  return apiRequest<Order>(`${PHARMACY_PREFIX}/orders/${orderId}${suffix}`, {
+    cache: "no-store",
+  });
+}
+
+export function getPatientOrder(
+  accessToken: string,
+  orderId: string,
+): Promise<Order> {
+  return apiRequest<Order>(`${PHARMACY_PREFIX}/orders/${orderId}`, {
+    accessToken,
+    cache: "no-store",
+  });
 }

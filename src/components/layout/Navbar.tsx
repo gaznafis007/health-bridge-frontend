@@ -12,6 +12,7 @@ const navigationLinks = [
   { href: "/pharmacy", label: "Pharmacy" },
   { href: "/lab-tests", label: "Lab Tests" },
   { href: "/ambulance", label: "Ambulance" },
+  { href: "/appointments", label: "Appointments" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -40,7 +41,7 @@ export function Navbar() {
         hasShadow ? "shadow-[0_18px_45px_rgba(15,23,42,0.12)]" : ""
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-[var(--color-primary)]">
             <LogoMark />
