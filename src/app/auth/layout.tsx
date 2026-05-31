@@ -26,13 +26,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-[var(--color-border)] bg-sky-50/80 p-6">
-            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+          <div className="rounded-4xl border border-border bg-sky-50/80 p-6">
+            <p className="text-sm font-semibold text-(--color-text-primary)">
               Privacy first
             </p>
-            <p className="mt-2 text-sm leading-7 text-[var(--color-text-secondary)]">
-              Your session is protected with secure tokens. Refresh credentials
-              stay in an httpOnly cookie and never touch browser storage.
+            <p className="mt-2 text-sm leading-7 text-text-secondary">
+              Your account stays safe and private — we keep your login info hidden and handled behind the scenes.
             </p>
           </div>
         </aside>
