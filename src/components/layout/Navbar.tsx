@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AuthNavActions } from "@/features/auth/components/AuthNavActions";
+
 const navigationLinks = [
   { href: "/", label: "Home" },
   { href: "/services", label: "Services" },
@@ -71,18 +73,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            href="/auth/login"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
-          >
-            Login / Register
-          </Link>
-          <Link
-            href="/appointments"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
-          >
-            Book Appointment
-          </Link>
+          <AuthNavActions />
         </div>
 
         <button
@@ -123,20 +114,7 @@ export function Navbar() {
               );
             })}
             <div className="mt-3 grid gap-3">
-              <Link
-                href="/auth/login"
-                onClick={() => setIsMenuOpen(false)}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-[var(--color-primary)]"
-              >
-                Login / Register
-              </Link>
-              <Link
-                href="/appointments"
-                onClick={() => setIsMenuOpen(false)}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white"
-              >
-                Book Appointment
-              </Link>
+              <AuthNavActions onNavigate={() => setIsMenuOpen(false)} />
             </div>
           </nav>
         </div>

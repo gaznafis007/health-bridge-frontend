@@ -80,3 +80,6 @@ src/
 - Add tests when meaningful flows or shared utilities are introduced.
 - Verify critical user paths: guest checkout, lab booking, ambulance request, appointment booking, telehealth entry, dashboard access.
 - Keep metadata, copy, and UI states aligned with healthcare trust, privacy, and clarity.
+
+# Rule
+do not `npm run build`
