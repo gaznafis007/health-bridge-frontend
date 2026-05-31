@@ -125,3 +125,65 @@ export interface BookAppointmentFormValues {
 export interface CancelAppointmentFormValues {
   reason: string;
 }
+
+export type DayOfWeek =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
+
+export interface AvailabilityRule {
+  id: string;
+  doctorId: string;
+  healthCenterId: string;
+  startTime: string;
+  endTime: string;
+  slotDurationMinutes: number;
+  isRecurring: boolean;
+  dayOfWeek: DayOfWeek | null;
+  specificDate: string | null;
+  healthCenter?: HealthCenter;
+}
+
+export interface CreateAvailabilityPayload {
+  healthCenterId: string;
+  startTime: string;
+  endTime: string;
+  slotDurationMinutes: number;
+  isRecurring: boolean;
+  dayOfWeek?: DayOfWeek;
+  specificDate?: string;
+}
+
+export interface UpdateAvailabilityPayload {
+  startTime?: string;
+  endTime?: string;
+  slotDurationMinutes?: number;
+  isRecurring?: boolean;
+  dayOfWeek?: DayOfWeek;
+  specificDate?: string;
+}
+
+export interface DoctorAppointment extends Appointment {
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+  };
+}
+
+export interface WriteVisitNotePayload {
+  diagnosis?: string;
+  treatmentPlan?: string;
+  notes?: string;
+}
+
+export interface WritePrescriptionPayload {
+  medicines: PrescriptionItem[];
+  notes?: string;
+  expiryDate?: string;
+}

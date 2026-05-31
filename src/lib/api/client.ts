@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "@/lib/api/config";
-import type { ApiError } from "@/features/pharmacy/lib/pharmacy.types";
+import type { ApiError } from "@/lib/api/types";
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;

@@ -87,8 +87,4 @@ export interface MedicineQuery {
   inStockOnly?: boolean;
 }
 
-export interface ApiError {
-  message: string;
-  errors?: { path: string; message: string }[];
-  status?: number;
-}
+export type { ApiError } from "@/lib/api/types";

@@ -6,6 +6,7 @@ import {
   logoutAction,
   silentRefreshAction,
 } from "@/lib/auth/auth.actions";
+import { getMe, toAuthUser } from "@/lib/auth/auth.api";
 import type { AuthSession, AuthUser } from "@/lib/auth/auth.types";
 
 export interface AuthContextValue {
@@ -14,6 +15,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   setSession: (session: AuthSession) => void;
+  refreshUser: () => Promise<void>;
   signout: () => Promise<void>;
 }
 
@@ -58,6 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(session.accessToken);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (!accessToken) return;
+    const me = await getMe(accessToken);
+    setUser(toAuthUser(me));
+  }, [accessToken]);
+
   const signout = useCallback(async () => {
     await logoutAction(accessToken);
     setUser(null);
@@ -71,9 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: user !== null && accessToken !== null,
       isLoading,
       setSession,
+      refreshUser,
       signout,
     }),
-    [accessToken, isLoading, setSession, signout, user],
+    [accessToken, isLoading, refreshUser, setSession, signout, user],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

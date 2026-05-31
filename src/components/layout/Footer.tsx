@@ -1,7 +1,18 @@
 import Link from "next/link";
 
-const quickLinks = ["Home", "About", "Contact", "Careers", "Blog"];
-const serviceLinks = ["Pharmacy", "Lab Tests", "Ambulance", "Appointments", "Telehealth"];
+const quickLinks = [
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+  { label: "Services", href: "/services" },
+];
+
+const serviceLinks = [
+  { label: "Pharmacy", href: "/pharmacy" },
+  { label: "Lab Tests", href: "/lab-tests" },
+  { label: "Ambulance", href: "/ambulance" },
+  { label: "Appointments", href: "/appointments" },
+];
 
 export function Footer() {
   return (
@@ -44,8 +55,8 @@ export function Footer() {
           </div>
         </div>
 
-        <FooterList title="Quick Links" items={quickLinks} />
-        <FooterList title="Services" items={serviceLinks} />
+        <FooterList title="Quick Links" links={quickLinks} />
+        <FooterList title="Services" links={serviceLinks} />
 
         <div>
           <h2 className="font-heading text-lg font-semibold">Contact</h2>
@@ -72,15 +83,21 @@ export function Footer() {
   );
 }
 
-function FooterList({ title, items }: { title: string; items: string[] }) {
+function FooterList({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; href: string }[];
+}) {
   return (
     <div>
       <h2 className="font-heading text-lg font-semibold">{title}</h2>
       <ul className="mt-5 space-y-3 text-sm text-slate-300">
-        {items.map((item) => (
-          <li key={item}>
-            <Link href={item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}>
-              {item}
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} className="transition hover:text-white">
+              {link.label}
             </Link>
           </li>
         ))}
