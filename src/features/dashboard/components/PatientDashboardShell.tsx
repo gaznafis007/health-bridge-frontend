@@ -60,7 +60,7 @@ export function PatientDashboardShell() {
                         className="block rounded-xl border border-[var(--color-border)] px-4 py-3 transition hover:bg-slate-50"
                       >
                         <p className="font-medium text-[var(--color-text-primary)]">
-                          {appt.appointmentTime} — {appt.healthCenter?.name ?? "Clinic"}
+                          {appt.startTime} — {appt.healthCenter?.name ?? "Clinic"}
                         </p>
                         <p className="text-sm text-[var(--color-text-secondary)]">
                           {new Date(appt.date).toLocaleDateString()}

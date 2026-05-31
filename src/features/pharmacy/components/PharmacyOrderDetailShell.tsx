@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { OrderStatusBadge } from "@/features/pharmacy/components/OrderStatusBadge";
 import { OrderSummary } from "@/features/pharmacy/components/OrderSummary";
 import { Spinner } from "@/components/ui/Spinner";

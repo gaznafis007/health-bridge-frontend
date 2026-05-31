@@ -19,7 +19,7 @@ export function useAuthenticatedSWR<T>(
 
   return useSWR<T>(
     swrKey,
-    async ([, token]) => {
+    async ([, token]: readonly [string, string]) => {
       try {
         return await fetcher(token);
       } catch (error) {

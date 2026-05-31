@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
@@ -9,7 +10,7 @@ import {
 
 interface DataTableShellProps<T> {
   data: T[];
-  columns: ColumnDef<T, unknown>[];
+  columns: ColumnDef<T, any>[];
   emptyMessage?: string;
 }
 
