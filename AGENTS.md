@@ -82,4 +82,5 @@ src/
 - Keep metadata, copy, and UI states aligned with healthcare trust, privacy, and clarity.
 
 # Rule
-do not `npm run build`
+do not `npm run build` or `yarn build`
+use yarn instead of npm
