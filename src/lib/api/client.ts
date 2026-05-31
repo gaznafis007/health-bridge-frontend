@@ -3,6 +3,7 @@ import type { ApiError } from "@/features/pharmacy/lib/pharmacy.types";
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  accessToken?: string;
 };
 
 const JSON_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -11,13 +12,18 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
+  const { accessToken, body, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
-  const method = options.method?.toUpperCase() ?? "GET";
-  const headers = new Headers(options.headers);
+  const method = fetchOptions.method?.toUpperCase() ?? "GET";
+  const headers = new Headers(fetchOptions.headers);
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
   const requestBody: BodyInit | null | undefined =
-    options.body && typeof options.body === "object" && !(options.body instanceof FormData)
-      ? JSON.stringify(options.body)
-      : (options.body as BodyInit | null | undefined);
+    body && typeof body === "object" && !(body instanceof FormData)
+      ? JSON.stringify(body)
+      : (body as BodyInit | null | undefined);
 
   if (
     JSON_METHODS.has(method) &&
@@ -29,7 +35,7 @@ export async function apiRequest<T>(
 
   try {
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       method,
       headers,
       body: requestBody,
@@ -64,15 +70,33 @@ async function buildApiError(response: Response): Promise<ApiError> {
   };
 
   try {
-    const payload = (await response.json()) as Partial<ApiError>;
+    const payload = (await response.json()) as Partial<ApiError> & {
+      message?: string | string[];
+    };
+    const message = normalizeErrorMessage(payload.message, fallback.message);
     return {
-      message: payload.message ?? fallback.message,
+      message,
       errors: payload.errors,
       status: response.status,
     };
   } catch {
     return fallback;
   }
+}
+
+function normalizeErrorMessage(
+  message: string | string[] | undefined,
+  fallback: string,
+): string {
+  if (Array.isArray(message)) {
+    return message.join(" ");
+  }
+
+  if (typeof message === "string" && message.length > 0) {
+    return message;
+  }
+
+  return fallback;
 }
 
 function isApiError(error: unknown): error is ApiError {
