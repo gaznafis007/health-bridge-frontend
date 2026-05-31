@@ -69,7 +69,7 @@ export function AppointmentDetailShell({
       setIsLoading(true);
 
       try {
-        const page = await getMyAppointments(accessToken, 0, 100);
+        const page = await getMyAppointments(accessToken!, 0, 100);
         const match = page.items.find((item) => item.id === appointmentId);
 
         if (!match) {
@@ -84,8 +84,8 @@ export function AppointmentDetailShell({
 
         if (match.status === "COMPLETED") {
           const [noteResult, rxResult] = await Promise.allSettled([
-            getVisitNote(accessToken, appointmentId),
-            getPrescription(accessToken, appointmentId),
+            getVisitNote(accessToken!, appointmentId),
+            getPrescription(accessToken!, appointmentId),
           ]);
 
           if (noteResult.status === "fulfilled") {
