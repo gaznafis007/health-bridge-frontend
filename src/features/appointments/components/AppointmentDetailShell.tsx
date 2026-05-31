@@ -63,13 +63,14 @@ export function AppointmentDetailShell({
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadAppointmentDetail() {
       setIsLoading(true);
 
       try {
-        const page = await getMyAppointments(accessToken!, 0, 100);
+        const page = await getMyAppointments(token, 0, 100);
         const match = page.items.find((item) => item.id === appointmentId);
 
         if (!match) {
@@ -84,8 +85,8 @@ export function AppointmentDetailShell({
 
         if (match.status === "COMPLETED") {
           const [noteResult, rxResult] = await Promise.allSettled([
-            getVisitNote(accessToken!, appointmentId),
-            getPrescription(accessToken!, appointmentId),
+            getVisitNote(token, appointmentId),
+            getPrescription(token, appointmentId),
           ]);
 
           if (noteResult.status === "fulfilled") {

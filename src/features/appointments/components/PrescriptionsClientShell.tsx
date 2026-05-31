@@ -33,13 +33,14 @@ export function PrescriptionsClientShell() {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadPrescriptions() {
       setIsLoading(true);
 
       try {
-        const page = await getMyPrescriptions(accessToken, 0, take);
+        const page = await getMyPrescriptions(token, 0, take);
         if (!isMounted) return;
         setPrescriptions(page.items);
         setTotal(page.total);

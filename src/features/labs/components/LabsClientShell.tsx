@@ -29,13 +29,14 @@ export function LabsClientShell() {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadCenters() {
       setIsLoading(true);
 
       try {
-        const data = await getCenters(accessToken);
+        const data = await getCenters(token);
         if (!isMounted) return;
         setCenters(data);
         setError(null);

@@ -51,6 +51,7 @@ export function CenterDetailShell({ centerId }: CenterDetailShellProps) {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadCenterCatalog() {
@@ -58,8 +59,8 @@ export function CenterDetailShell({ centerId }: CenterDetailShellProps) {
 
       try {
         const [testsData, packagesData] = await Promise.all([
-          getCenterTests(accessToken, centerId),
-          getCenterPackages(accessToken, centerId),
+          getCenterTests(token, centerId),
+          getCenterPackages(token, centerId),
         ]);
 
         if (!isMounted) return;

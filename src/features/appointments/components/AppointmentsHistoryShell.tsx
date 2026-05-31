@@ -33,13 +33,14 @@ export function AppointmentsHistoryShell() {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadAppointments() {
       setIsLoading(true);
 
       try {
-        const page = await getMyAppointments(accessToken, 0, take);
+        const page = await getMyAppointments(token, 0, take);
         if (!isMounted) return;
         setAppointments(page.items);
         setTotal(page.total);

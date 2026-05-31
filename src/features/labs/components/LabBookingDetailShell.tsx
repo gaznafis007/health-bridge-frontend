@@ -49,6 +49,7 @@ export function LabBookingDetailShell({ bookingId }: LabBookingDetailShellProps)
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadBookingDetail() {
@@ -56,8 +57,8 @@ export function LabBookingDetailShell({ bookingId }: LabBookingDetailShellProps)
 
       try {
         const [bookingData, reportsData] = await Promise.all([
-          getBooking(accessToken, bookingId),
-          getBookingReports(accessToken, bookingId).catch(() => [] as LabReport[]),
+          getBooking(token, bookingId),
+          getBookingReports(token, bookingId).catch(() => [] as LabReport[]),
         ]);
 
         if (!isMounted) return;

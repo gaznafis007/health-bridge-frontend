@@ -33,13 +33,14 @@ export function LabBookingsClientShell() {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadBookings() {
       setIsLoading(true);
 
       try {
-        const page = await getMyBookings(accessToken, 0, take);
+        const page = await getMyBookings(token, 0, take);
         if (!isMounted) return;
         setBookings(page.data);
         setTotal(page.total);

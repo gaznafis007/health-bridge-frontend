@@ -51,13 +51,14 @@ export function AppointmentsClientShell() {
       return;
     }
 
+    const token = accessToken;
     let isMounted = true;
 
     async function loadCenters() {
       setIsLoading(true);
 
       try {
-        const centers = await getHealthCenters(accessToken);
+        const centers = await getHealthCenters(token);
         if (!isMounted) return;
         setHealthCenters(centers);
         setError(null);
