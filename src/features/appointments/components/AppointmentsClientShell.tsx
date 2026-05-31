@@ -142,23 +142,23 @@ export function AppointmentsClientShell() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="space-y-6">
-        <div className="surface-card overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-8">
+        <div className="surface-card overflow-hidden rounded-4xl border border-border bg-linear-to-br from-sky-50 via-white to-cyan-50 p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-[var(--color-primary)]">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-primary">
                 <CalendarIcon />
               </div>
-              <h1 className="font-heading text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
+              <h1 className="font-heading text-3xl font-bold text-(--color-text-primary) sm:text-4xl">
                 Appointments
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary sm:text-base">
                 Find in-person doctors, pick an available slot, and book your visit.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/appointments/history"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] bg-white px-5 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-primary bg-white px-5 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
               >
                 My appointments
               </Link>
