@@ -50,10 +50,26 @@ export function toAuthUser(user: UserMeResponse): AuthUser {
     id: user.id,
     email: user.email,
     phone: user.phone,
-    role: user.role,
+    role: normalizeUserRole(user.role),
     firstName: user.firstName,
     lastName: user.lastName,
     profilePicture: user.profilePicture,
     isVerified: user.isVerified,
   };
+}
+
+function normalizeUserRole(role: string): UserRole {
+  const normalized = role.toUpperCase();
+
+  if (
+    normalized === "PATIENT" ||
+    normalized === "DOCTOR" ||
+    normalized === "ADMIN" ||
+    normalized === "DISPATCHER" ||
+    normalized === "DRIVER"
+  ) {
+    return normalized;
+  }
+
+  return role as UserRole;
 }

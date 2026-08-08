@@ -25,8 +25,8 @@ export interface AmbulanceHealthCenter {
 export interface CreateAmbulanceBookingPayload {
   pickupAddress: string;
   destinationAddress: string;
-  pickupLatitude: number;
-  pickupLongitude: number;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
   destinationLatitude?: number;
   destinationLongitude?: number;
   vehicleTypeRequired: AmbulanceVehicleType;
@@ -35,6 +35,10 @@ export interface CreateAmbulanceBookingPayload {
   specialRequirements?: string;
   originCenterId?: string;
   destinationCenterId?: string;
+}
+
+export interface CancelAmbulanceBookingPayload {
+  cancelReason?: string;
 }
 
 export interface AmbulanceBooking {
@@ -52,6 +56,7 @@ export interface AmbulanceBooking {
   patientCondition: string;
   specialRequirements: string | null;
   estimatedFare: string;
+  estimatedDistance?: string | number;
   createdAt: string;
   updatedAt: string;
 }

@@ -7,6 +7,24 @@ import type {
 
 const PREFIX = "/e-commerce";
 
+export interface AdminOrder extends Order {
+  customerEmail: string | null;
+}
+
+export interface AdminOrdersQuery {
+  skip?: number;
+  take?: number;
+  email?: string;
+  phone?: string;
+}
+
+export interface PaginatedAdminOrders {
+  items: AdminOrder[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
 export interface CreateCategoryPayload {
   name: string;
   description?: string;
@@ -37,35 +55,35 @@ export interface UpdateDeliveryStatusPayload {
   deliveryStatus: Order["deliveryStatus"];
 }
 
-export interface PaginatedOrders {
-  items: Order[];
-  total: number;
-  skip: number;
-  take: number;
-}
+export const DEFAULT_ADMIN_ORDERS_PAGE_SIZE = 20;
 
 export function listAdminOrders(
   accessToken: string,
-  params: { skip?: number; take?: number } = {},
-): Promise<PaginatedOrders> {
-  const searchParams = new URLSearchParams();
-  if (params.skip !== undefined) searchParams.set("skip", String(params.skip));
-  if (params.take !== undefined) searchParams.set("take", String(params.take));
-  const qs = searchParams.size > 0 ? `?${searchParams}` : "";
-  return apiRequest<PaginatedOrders>(`${PREFIX}/orders${qs}`, {
-    accessToken,
-    cache: "no-store",
+  params: AdminOrdersQuery = {},
+): Promise<PaginatedAdminOrders> {
+  const searchParams = new URLSearchParams({
+    skip: String(params.skip ?? 0),
+    take: String(params.take ?? DEFAULT_ADMIN_ORDERS_PAGE_SIZE),
   });
-}
 
-export function getAdminOrder(
-  accessToken: string,
-  orderId: string,
-): Promise<Order> {
-  return apiRequest<Order>(`${PREFIX}/orders/${orderId}`, {
-    accessToken,
-    cache: "no-store",
-  });
+  const email = params.email?.trim();
+  const phone = params.phone?.trim();
+
+  if (email && email.length >= 3) {
+    searchParams.set("email", email);
+  }
+
+  if (phone && phone.length >= 3) {
+    searchParams.set("phone", phone);
+  }
+
+  return apiRequest<PaginatedAdminOrders>(
+    `${PREFIX}/admin/orders?${searchParams.toString()}`,
+    {
+      accessToken,
+      cache: "no-store",
+    },
+  );
 }
 
 export function createCategory(

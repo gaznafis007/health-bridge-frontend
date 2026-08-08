@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { checkout } from "@/features/pharmacy/lib/pharmacy.api";
+import { saveDeliveryPhoneForTracking } from "@/features/pharmacy/lib/pharmacy-tracking.storage";
 import type { ApiError, Cart } from "@/features/pharmacy/lib/pharmacy.types";
 import { generateIdempotencyKey } from "@/features/pharmacy/lib/pharmacy.utils";
+import { getMe } from "@/lib/auth/auth.api";
 
 interface CheckoutFormProps {
   cart: Cart;
@@ -30,7 +32,9 @@ const phonePattern = /^\+?[1-9]\d{7,14}$/;
 
 export function CheckoutForm({ cart, sessionId, onSuccess }: CheckoutFormProps) {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const patientAccessToken =
+    user?.role === "PATIENT" ? accessToken ?? undefined : undefined;
   const [form, setForm] = useState<FormState>({
     fullName: "",
     phone: "",
@@ -40,6 +44,48 @@ export function CheckoutForm({ cart, sessionId, onSuccess }: CheckoutFormProps) 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasPrefilledProfile = useRef(false);
+
+  useEffect(() => {
+    if (!accessToken || hasPrefilledProfile.current) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function prefillFromProfile() {
+      try {
+        const profile = await getMe(accessToken!);
+        if (!isMounted) {
+          return;
+        }
+
+        hasPrefilledProfile.current = true;
+        setForm((current) => ({
+          ...current,
+          fullName: formatFullName(profile.firstName, profile.lastName),
+          phone: profile.phone,
+        }));
+      } catch {
+        if (!isMounted || !user || hasPrefilledProfile.current) {
+          return;
+        }
+
+        hasPrefilledProfile.current = true;
+        setForm((current) => ({
+          ...current,
+          fullName: formatFullName(user.firstName, user.lastName),
+          phone: user.phone,
+        }));
+      }
+    }
+
+    void prefillFromProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [accessToken, user]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -63,13 +109,15 @@ export function CheckoutForm({ cart, sessionId, onSuccess }: CheckoutFormProps) 
           deliveryPhone: form.phone.trim(),
           idempotencyKey: generateIdempotencyKey(),
         },
-        accessToken ?? undefined,
+        patientAccessToken,
       );
 
+      saveDeliveryPhoneForTracking(form.phone.trim());
       onSuccess();
-      const trackingUrl = accessToken
-        ? `/pharmacy/orders/${order.id}`
-        : `/pharmacy/orders/${order.id}?session=${encodeURIComponent(sessionId)}`;
+      const trackingUrl =
+        user?.role === "PATIENT" && accessToken
+          ? `/pharmacy/orders/${order.id}?placed=1`
+          : `/pharmacy/orders/${order.id}?session=${encodeURIComponent(sessionId)}&placed=1`;
       router.push(trackingUrl);
     } catch (error) {
       const apiError = error as ApiError;
@@ -237,4 +285,8 @@ function validate(form: FormState): FieldErrors {
   }
 
   return errors;
+}
+
+function formatFullName(firstName: string, lastName: string) {
+  return `${firstName} ${lastName}`.trim();
 }

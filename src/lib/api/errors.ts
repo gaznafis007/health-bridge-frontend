@@ -32,6 +32,41 @@ export function getApiErrorStatus(error: unknown): number | undefined {
   return undefined;
 }
 
+export function getApiErrorCode(error: unknown): string | undefined {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "string"
+  ) {
+    return (error as { code: string }).code;
+  }
+
+  return undefined;
+}
+
+const ambulanceBookingErrorMessages: Record<string, string> = {
+  PICKUP_ADDRESS_NOT_FOUND:
+    "Pick a suggested pickup address or refine what you typed.",
+  DESTINATION_ADDRESS_NOT_FOUND:
+    "Pick a suggested destination or select a hospital.",
+  DESTINATION_CENTER_NOT_FOUND: "Re-select the destination hospital.",
+  INVALID_COORDINATES: "That location is outside our service area.",
+};
+
+export function mapAmbulanceBookingError(
+  error: unknown,
+  fallback: string,
+): string {
+  const code = getApiErrorCode(error);
+
+  if (code && ambulanceBookingErrorMessages[code]) {
+    return ambulanceBookingErrorMessages[code];
+  }
+
+  return mapApiErrorMessage(error, fallback);
+}
+
 export function mapApiErrorMessage(
   error: unknown,
   fallback: string,

@@ -72,10 +72,12 @@ async function buildApiError(response: Response): Promise<ApiError> {
   try {
     const payload = (await response.json()) as Partial<ApiError> & {
       message?: string | string[];
+      code?: string;
     };
     const message = normalizeErrorMessage(payload.message, fallback.message);
     return {
       message,
+      code: typeof payload.code === "string" ? payload.code : undefined,
       errors: payload.errors,
       status: response.status,
     };

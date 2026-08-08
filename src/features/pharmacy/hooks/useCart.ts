@@ -8,6 +8,7 @@ import {
   upsertCartItem,
 } from "@/features/pharmacy/lib/pharmacy.api";
 import type { Cart, Medicine } from "@/features/pharmacy/lib/pharmacy.types";
+import { isGuestSessionNotFound } from "@/features/pharmacy/lib/pharmacy.utils";
 
 const EMPTY_CART_SUBTOTAL = "0.00";
 
@@ -16,9 +17,9 @@ interface UseCartResult {
   isLoading: boolean;
   isUpdating: boolean;
   errorMessage: string | null;
-  addItem: (medicineId: string, quantity: number) => Promise<void>;
-  updateQuantity: (medicineId: string, quantity: number) => Promise<void>;
-  removeItem: (medicineId: string) => Promise<void>;
+  addItem: (medicineId: string, quantity: number) => Promise<boolean>;
+  updateQuantity: (medicineId: string, quantity: number) => Promise<boolean>;
+  removeItem: (medicineId: string) => Promise<boolean>;
   clearLocal: () => void;
 }
 
@@ -26,12 +27,18 @@ export function useCart(
   sessionId: string | null,
   isSessionReady: boolean,
   medicines: Medicine[],
+  refreshGuestSession?: () => Promise<string | null>,
 ): UseCartResult {
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const latestCartRef = useRef<Cart | null>(null);
+  const refreshGuestSessionRef = useRef(refreshGuestSession);
+
+  useEffect(() => {
+    refreshGuestSessionRef.current = refreshGuestSession;
+  }, [refreshGuestSession]);
 
   useEffect(() => {
     latestCartRef.current = cart;
@@ -61,6 +68,11 @@ export function useCart(
           return;
         }
 
+        const recoveredSessionId = await recoverGuestSession(error);
+        if (recoveredSessionId && recoveredSessionId !== currentSessionId) {
+          return;
+        }
+
         setCart(createEmptyCart(currentSessionId));
         setErrorMessage(getErrorMessage(error, "We could not load your cart."));
       } finally {
@@ -70,7 +82,7 @@ export function useCart(
       }
     }
 
-    hydrateCart();
+    void hydrateCart();
 
     return () => {
       isMounted = false;
@@ -78,32 +90,31 @@ export function useCart(
   }, [isSessionReady, sessionId]);
 
   async function addItem(medicineId: string, quantity: number) {
-    await mutateCart(medicineId, clampQuantity(quantity), "upsert");
+    return mutateCart(medicineId, clampQuantity(quantity), "upsert");
   }
 
   async function updateQuantity(medicineId: string, quantity: number) {
     const nextQuantity = clampQuantity(quantity);
 
     if (quantity === 0) {
-      await removeItem(medicineId);
-      return;
+      return removeItem(medicineId);
     }
 
-    await mutateCart(medicineId, nextQuantity, "upsert");
+    return mutateCart(medicineId, nextQuantity, "upsert");
   }
 
   async function removeItem(medicineId: string) {
-    await mutateCart(medicineId, 0, "remove");
+    return mutateCart(medicineId, 0, "remove");
   }
 
   async function mutateCart(
     medicineId: string,
     quantity: number,
     action: "upsert" | "remove",
-  ) {
+  ): Promise<boolean> {
     if (!sessionId) {
       setErrorMessage("Your guest session is not ready yet.");
-      return;
+      return false;
     }
 
     const previousCart = latestCartRef.current ?? createEmptyCart(sessionId);
@@ -117,18 +128,43 @@ export function useCart(
     setErrorMessage(null);
 
     try {
-      const nextCart =
-        action === "remove"
-          ? await removeCartItemRequest(sessionId, medicineId)
-          : await upsertCartItem(sessionId, medicineId, quantity);
-
+      const nextCart = await runCartMutation(sessionId, medicineId, quantity, action);
       setCart(nextCart);
+      return true;
     } catch (error) {
+      const recoveredSessionId = await recoverGuestSession(error);
+
+      if (recoveredSessionId) {
+        try {
+          const nextCart = await runCartMutation(
+            recoveredSessionId,
+            medicineId,
+            quantity,
+            action,
+          );
+          setCart(nextCart);
+          return true;
+        } catch (retryError) {
+          setCart(previousCart);
+          setErrorMessage(getErrorMessage(retryError, "We could not update your cart."));
+          return false;
+        }
+      }
+
       setCart(previousCart);
       setErrorMessage(getErrorMessage(error, "We could not update your cart."));
+      return false;
     } finally {
       setIsUpdating(false);
     }
+  }
+
+  async function recoverGuestSession(error: unknown): Promise<string | null> {
+    if (!isGuestSessionNotFound(error) || !refreshGuestSessionRef.current) {
+      return null;
+    }
+
+    return refreshGuestSessionRef.current();
   }
 
   function clearLocal() {
@@ -150,6 +186,17 @@ export function useCart(
     removeItem,
     clearLocal,
   };
+}
+
+async function runCartMutation(
+  guestSessionId: string,
+  medicineId: string,
+  quantity: number,
+  action: "upsert" | "remove",
+) {
+  return action === "remove"
+    ? removeCartItemRequest(guestSessionId, medicineId)
+    : upsertCartItem(guestSessionId, medicineId, quantity);
 }
 
 function clampQuantity(value: number) {

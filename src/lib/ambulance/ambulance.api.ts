@@ -9,6 +9,7 @@ import type {
   AmbulanceShift,
   LocationTrail,
   CreateAmbulanceBookingPayload,
+  CancelAmbulanceBookingPayload,
   CreateDriverPayload,
   CreateFleetPayload,
   CreateHealthCenterPayload,
@@ -70,10 +71,11 @@ export function getAmbulanceBooking(
 export function cancelAmbulanceBooking(
   accessToken: string,
   bookingId: string,
+  payload?: CancelAmbulanceBookingPayload,
 ): Promise<AmbulanceBooking> {
   return apiRequest<AmbulanceBooking>(
     `${AMBULANCE_PREFIX}/bookings/${bookingId}/cancel`,
-    { method: "PATCH", accessToken },
+    { method: "PATCH", accessToken, body: payload },
   );
 }
 

@@ -85,6 +85,15 @@ export interface MedicineQuery {
   search?: string;
   requiresPrescription?: boolean;
   inStockOnly?: boolean;
+  skip?: number;
+  take?: number;
+}
+
+export interface MedicinesPage {
+  items: Medicine[];
+  total: number;
+  skip: number;
+  take: number;
 }
 
 export type { ApiError } from "@/lib/api/types";

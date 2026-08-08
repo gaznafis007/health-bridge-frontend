@@ -8,9 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import {
-  getDashboardPathForRole,
-  getPrimaryNavHrefForRole,
-  getPrimaryNavLabelForRole,
+  getAuthenticatedNavLinks,
+  type AuthenticatedNavLinkVariant,
 } from "@/lib/auth/dashboard-routes";
 
 export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
@@ -59,25 +58,20 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
     }
   }
 
-  const primaryHref = getPrimaryNavHrefForRole(user.role);
-  const primaryLabel = getPrimaryNavLabelForRole(user.role);
+  const navLinks = getAuthenticatedNavLinks(user.role);
 
   return (
     <>
-      <Link
-        href={getDashboardPathForRole(user.role)}
-        onClick={onNavigate}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-slate-50"
-      >
-        Dashboard
-      </Link>
-      <Link
-        href={primaryHref}
-        onClick={onNavigate}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
-      >
-        {primaryLabel}
-      </Link>
+      {navLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={onNavigate}
+          className={navLinkClassName(link.variant)}
+        >
+          {link.label}
+        </Link>
+      ))}
       <Link
         href="/account"
         onClick={onNavigate}
@@ -105,4 +99,15 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
 
 function formatRole(role: string) {
   return role.charAt(0) + role.slice(1).toLowerCase();
+}
+
+const navLinkClassNames: Record<AuthenticatedNavLinkVariant, string> = {
+  default:
+    "inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-slate-50",
+  primary:
+    "inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50",
+};
+
+function navLinkClassName(variant: AuthenticatedNavLinkVariant) {
+  return navLinkClassNames[variant];
 }

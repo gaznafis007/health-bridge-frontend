@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AuthNavActions } from "@/features/auth/components/AuthNavActions";
+import { PharmacyTrackOrdersLink } from "@/features/pharmacy/components/PharmacyTrackOrdersLink";
 
 const navigationLinks = [
   { href: "/", label: "Home" },
@@ -71,6 +72,7 @@ export function Navbar() {
               </Link>
             );
           })}
+          <PharmacyTrackOrdersLink pathname={pathname} />
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -114,6 +116,11 @@ export function Navbar() {
                 </Link>
               );
             })}
+            <PharmacyTrackOrdersLink
+              pathname={pathname}
+              onNavigate={() => setIsMenuOpen(false)}
+              className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)]"
+            />
             <div className="mt-3 grid gap-3">
               <AuthNavActions onNavigate={() => setIsMenuOpen(false)} />
             </div>
