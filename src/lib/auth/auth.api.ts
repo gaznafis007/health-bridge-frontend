@@ -5,6 +5,7 @@ import type {
   SignupPayload,
   TokenResponse,
   UserMeResponse,
+  UserRole,
 } from "@/lib/auth/auth.types";
 
 const AUTH_PREFIX = "/auth";

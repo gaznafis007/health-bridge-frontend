@@ -6,8 +6,8 @@ import type { CartItem as CartItemType } from "@/features/pharmacy/lib/pharmacy.
 interface CartItemProps {
   item: CartItemType;
   isUpdating: boolean;
-  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void>;
-  onRemove: (medicineId: string) => Promise<void>;
+  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void | boolean>;
+  onRemove: (medicineId: string) => Promise<void | boolean>;
 }
 
 export function CartItem({
