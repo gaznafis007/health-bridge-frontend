@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { createGuestSession } from "@/features/pharmacy/lib/pharmacy.api";
-import { isSessionExpired } from "@/features/pharmacy/lib/pharmacy.utils";
-
-const STORAGE_KEY = "hb_guest_session";
-
-interface StoredGuestSession {
-  sessionId: string;
-  expiresAt: string;
-}
+import { createGuestSession, getCart } from "@/features/pharmacy/lib/pharmacy.api";
+import {
+  clearGuestSessionFromStorage,
+  readGuestSessionFromStorage,
+  saveGuestSessionToStorage,
+} from "@/features/pharmacy/lib/guest-session.storage";
+import { isGuestSessionNotFound } from "@/features/pharmacy/lib/pharmacy.utils";
 
 interface UseGuestSessionResult {
   sessionId: string | null;
   isReady: boolean;
   errorMessage: string | null;
+  refreshGuestSession: () => Promise<string | null>;
 }
 
 export function useGuestSession(): UseGuestSessionResult {
@@ -23,25 +22,50 @@ export function useGuestSession(): UseGuestSessionResult {
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const refreshGuestSession = useCallback(async (): Promise<string | null> => {
+    clearGuestSessionFromStorage();
+
+    try {
+      const nextSession = await createGuestSession();
+      saveGuestSessionToStorage(nextSession);
+      setSessionId(nextSession.sessionId);
+      setErrorMessage(null);
+      return nextSession.sessionId;
+    } catch (error) {
+      setSessionId(null);
+      setErrorMessage(getErrorMessage(error, "We could not start your guest session."));
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
     async function initializeGuestSession() {
+      setIsReady(false);
+
       try {
-        const storedSession = readStoredSession();
+        const storedSession = readGuestSessionFromStorage();
 
-        if (storedSession && !isSessionExpired(storedSession.expiresAt)) {
-          if (!isMounted) {
+        if (storedSession) {
+          try {
+            await getCart(storedSession.sessionId);
+
+            if (!isMounted) {
+              return;
+            }
+
+            setSessionId(storedSession.sessionId);
+            setErrorMessage(null);
             return;
+          } catch (error) {
+            if (!isGuestSessionNotFound(error)) {
+              throw error;
+            }
+
+            clearGuestSessionFromStorage();
           }
-
-          setSessionId(storedSession.sessionId);
-          setErrorMessage(null);
-          setIsReady(true);
-          return;
         }
-
-        window.localStorage.removeItem(STORAGE_KEY);
 
         const nextSession = await createGuestSession();
 
@@ -49,8 +73,7 @@ export function useGuestSession(): UseGuestSessionResult {
           return;
         }
 
-        const value = JSON.stringify(nextSession);
-        window.localStorage.setItem(STORAGE_KEY, value);
+        saveGuestSessionToStorage(nextSession);
         setSessionId(nextSession.sessionId);
         setErrorMessage(null);
       } catch (error) {
@@ -67,14 +90,14 @@ export function useGuestSession(): UseGuestSessionResult {
       }
     }
 
-    initializeGuestSession();
+    void initializeGuestSession();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  return { sessionId, isReady, errorMessage };
+  return { sessionId, isReady, errorMessage, refreshGuestSession };
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -84,29 +107,4 @@ function getErrorMessage(error: unknown, fallback: string) {
     typeof (error as { message?: unknown }).message === "string"
     ? (error as { message: string }).message
     : fallback;
-}
-
-function readStoredSession(): StoredGuestSession | null {
-  try {
-    const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawValue) {
-      return null;
-    }
-
-    const parsed = JSON.parse(rawValue) as Partial<StoredGuestSession>;
-
-    if (
-      typeof parsed.sessionId !== "string" ||
-      typeof parsed.expiresAt !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      sessionId: parsed.sessionId,
-      expiresAt: parsed.expiresAt,
-    };
-  } catch {
-    return null;
-  }
 }

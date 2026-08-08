@@ -1,11 +1,9 @@
 "use client";
 
-import { createColumnHelper } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
-import { DataTableShell } from "@/components/ui/DataTableShell";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Spinner } from "@/components/ui/Spinner";
@@ -13,17 +11,18 @@ import {
   AdminFormField,
   adminInputClass,
 } from "@/features/admin/components/AdminFormField";
+import { AdminOrdersList } from "@/features/admin/components/AdminOrdersList";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import type { Order } from "@/features/pharmacy/lib/pharmacy.types";
+import { OrderStatusBadge } from "@/features/pharmacy/components/OrderStatusBadge";
+import { OrderSummary } from "@/features/pharmacy/components/OrderSummary";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { useAuthenticatedSWR } from "@/lib/hooks/useAuthenticatedSWR";
 import {
-  getAdminOrder,
+  DEFAULT_ADMIN_ORDERS_PAGE_SIZE,
   listAdminOrders,
   updateOrderDeliveryStatus,
+  type AdminOrder,
 } from "@/lib/pharmacy/admin.api";
-
-const columnHelper = createColumnHelper<Order>();
 
 const deliveryStatuses = [
   "PENDING",
@@ -36,145 +35,271 @@ const deliveryStatuses = [
 
 export function AdminOrdersShell() {
   const { accessToken } = useAuth();
-  const [lookupId, setLookupId] = useState("");
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [skip, setSkip] = useState(0);
+  const [emailInput, setEmailInput] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [appliedEmail, setAppliedEmail] = useState("");
+  const [appliedPhone, setAppliedPhone] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const { data, error, isLoading, mutate } = useAuthenticatedSWR(
-    "admin/pharmacy/orders",
-    (token) => listAdminOrders(token, { take: 50 }),
+  const swrKey = `admin/pharmacy/orders?skip=${skip}&email=${appliedEmail}&phone=${appliedPhone}`;
+
+  const { data, error, isLoading, mutate } = useAuthenticatedSWR(swrKey, (token) =>
+    listAdminOrders(token, {
+      skip,
+      take: DEFAULT_ADMIN_ORDERS_PAGE_SIZE,
+      email: appliedEmail || undefined,
+      phone: appliedPhone || undefined,
+    }),
   );
 
-  const { register, handleSubmit, reset } = useForm<{ deliveryStatus: Order["deliveryStatus"] }>();
+  const { register, handleSubmit, reset } = useForm<{
+    deliveryStatus: AdminOrder["deliveryStatus"];
+  }>();
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    if (!accessToken || !lookupId.trim()) return;
-    setIsLookingUp(true);
-    setLookupError(null);
-    try {
-      const order = await getAdminOrder(accessToken, lookupId.trim());
-      setSelectedOrder(order);
-      reset({ deliveryStatus: order.deliveryStatus });
-    } catch (err) {
-      setLookupError(getApiErrorMessage(err, "Order not found."));
-      setSelectedOrder(null);
-    } finally {
-      setIsLookingUp(false);
+  useEffect(() => {
+    if (!selectedOrder || !data?.items) {
+      return;
     }
+
+    const refreshed = data.items.find((order) => order.id === selectedOrder.id);
+    if (refreshed && refreshed.deliveryStatus !== selectedOrder.deliveryStatus) {
+      setSelectedOrder(refreshed);
+      reset({ deliveryStatus: refreshed.deliveryStatus });
+    }
+  }, [data?.items, reset, selectedOrder]);
+
+  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nextEmail = emailInput.trim();
+    const nextPhone = phoneInput.trim();
+
+    if (
+      (nextEmail.length > 0 && nextEmail.length < 3) ||
+      (nextPhone.length > 0 && nextPhone.length < 3)
+    ) {
+      setSearchError("Email and phone searches need at least 3 characters.");
+      return;
+    }
+
+    setSearchError(null);
+    setSkip(0);
+    setAppliedEmail(nextEmail.length >= 3 ? nextEmail : "");
+    setAppliedPhone(nextPhone.length >= 3 ? nextPhone : "");
+    setSelectedOrder(null);
   }
 
-  async function onUpdateStatus(values: { deliveryStatus: Order["deliveryStatus"] }) {
-    if (!accessToken || !selectedOrder) return;
+  function handleClearSearch() {
+    setEmailInput("");
+    setPhoneInput("");
+    setAppliedEmail("");
+    setAppliedPhone("");
+    setSearchError(null);
+    setSkip(0);
+    setSelectedOrder(null);
+  }
+
+  function selectOrder(order: AdminOrder) {
+    setSelectedOrder(order);
+    reset({ deliveryStatus: order.deliveryStatus });
     setUpdateError(null);
     setUpdateSuccess(false);
+  }
+
+  async function onUpdateStatus(values: { deliveryStatus: AdminOrder["deliveryStatus"] }) {
+    if (!accessToken || !selectedOrder) {
+      return;
+    }
+
+    setIsUpdating(true);
+    setUpdateError(null);
+    setUpdateSuccess(false);
+
     try {
       const updated = await updateOrderDeliveryStatus(
         accessToken,
         selectedOrder.id,
         values,
       );
-      setSelectedOrder(updated);
+      setSelectedOrder({ ...selectedOrder, ...updated });
+      reset({ deliveryStatus: updated.deliveryStatus });
       setUpdateSuccess(true);
       await mutate();
     } catch (err) {
       setUpdateError(getApiErrorMessage(err, "Could not update delivery status."));
+    } finally {
+      setIsUpdating(false);
     }
   }
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("id", {
-        header: "Order ID",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-xs">{getValue().slice(0, 8)}…</span>
-        ),
-      }),
-      columnHelper.accessor("finalAmount", {
-        header: "Amount",
-        cell: ({ getValue }) => `৳${getValue()}`,
-      }),
-      columnHelper.accessor("paymentStatus", { header: "Payment" }),
-      columnHelper.accessor("deliveryStatus", { header: "Delivery" }),
-      columnHelper.accessor("createdAt", {
-        header: "Created",
-        cell: ({ getValue }) => new Date(getValue()).toLocaleDateString(),
-      }),
-    ],
-    [],
-  );
+  const total = data?.total ?? 0;
+  const hasFilters = Boolean(appliedEmail || appliedPhone);
 
   return (
     <div className="space-y-8">
       <SectionHeader
         title="Pharmacy orders"
-        description="Review orders and update delivery status."
+        description="Browse all pharmacy orders, search by customer email or delivery phone, and update delivery status."
       />
 
       <form
-        onSubmit={handleLookup}
-        className="flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-5"
+        onSubmit={handleSearch}
+        className="grid gap-4 rounded-2xl border border-[var(--color-border)] bg-white p-5 sm:grid-cols-2 lg:grid-cols-4"
       >
-        <AdminFormField label="Look up order by ID">
+        <AdminFormField label="Search by email">
           <input
-            value={lookupId}
-            onChange={(e) => setLookupId(e.target.value)}
+            type="search"
+            value={emailInput}
+            onChange={(event) => setEmailInput(event.target.value)}
             className={adminInputClass}
-            placeholder="Order UUID"
+            placeholder="patient@example.com"
           />
         </AdminFormField>
-        <Button type="submit" disabled={isLookingUp}>
-          {isLookingUp ? "Looking up..." : "Look up"}
-        </Button>
+        <AdminFormField label="Search by phone">
+          <input
+            type="search"
+            value={phoneInput}
+            onChange={(event) => setPhoneInput(event.target.value)}
+            className={adminInputClass}
+            placeholder="+8801700000000"
+          />
+        </AdminFormField>
+        <div className="flex flex-wrap items-end gap-2 sm:col-span-2">
+          <Button type="submit">Search orders</Button>
+          {hasFilters ? (
+            <Button type="button" variant="outline" onClick={handleClearSearch}>
+              Clear filters
+            </Button>
+          ) : null}
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] sm:col-span-2 lg:col-span-4">
+          Email matches registered patient accounts only. Use at least 3 characters per field.
+          Both filters apply together when set.
+        </p>
       </form>
 
-      {lookupError ? <ErrorMessage message={lookupError} /> : null}
-
-      {selectedOrder ? (
-        <form
-          onSubmit={handleSubmit(onUpdateStatus)}
-          className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-slate-50 p-5"
-        >
-          <p className="text-sm text-[var(--color-text-secondary)]">
-            Order {selectedOrder.id} — ৳{selectedOrder.finalAmount} (
-            {selectedOrder.paymentStatus})
-          </p>
-          <AdminFormField label="Delivery status">
-            <select {...register("deliveryStatus")} className={adminInputClass}>
-              {deliveryStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </AdminFormField>
-          {updateError ? <ErrorMessage message={updateError} /> : null}
-          {updateSuccess ? (
-            <p className="text-sm font-medium text-emerald-600">Status updated.</p>
-          ) : null}
-          <Button type="submit">Update delivery status</Button>
-        </form>
-      ) : null}
+      {searchError ? <ErrorMessage message={searchError} /> : null}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Spinner />
         </div>
       ) : null}
+
       {error ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          Order list unavailable — use look-up by ID above.
-        </p>
+        <ErrorMessage message={getApiErrorMessage(error, "Could not load pharmacy orders.")} />
       ) : null}
-      {data?.items?.length ? (
-        <DataTableShell
-          data={data.items}
-          columns={columns}
-          emptyMessage="No orders found."
-        />
+
+      {!isLoading && !error && data ? (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Showing {data.items.length} of {total} order{total === 1 ? "" : "s"}
+            </p>
+            {total > DEFAULT_ADMIN_ORDERS_PAGE_SIZE ? (
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Page {Math.floor(skip / DEFAULT_ADMIN_ORDERS_PAGE_SIZE) + 1} of{" "}
+                {Math.ceil(total / DEFAULT_ADMIN_ORDERS_PAGE_SIZE)}
+              </p>
+            ) : null}
+          </div>
+
+          <AdminOrdersList
+            orders={data.items}
+            selectedOrderId={selectedOrder?.id}
+            emptyMessage={
+              hasFilters
+                ? "No orders match your search."
+                : "No pharmacy orders yet."
+            }
+            onSelect={selectOrder}
+          />
+
+          {total > DEFAULT_ADMIN_ORDERS_PAGE_SIZE ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={skip === 0}
+                onClick={() => {
+                  setSkip((current) => Math.max(0, current - DEFAULT_ADMIN_ORDERS_PAGE_SIZE));
+                  setSelectedOrder(null);
+                }}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={skip + DEFAULT_ADMIN_ORDERS_PAGE_SIZE >= total}
+                onClick={() => {
+                  setSkip((current) => current + DEFAULT_ADMIN_ORDERS_PAGE_SIZE);
+                  setSelectedOrder(null);
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {selectedOrder ? (
+        <div className="space-y-5 rounded-[2rem] border border-[var(--color-border)] bg-slate-50 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h3 className="font-heading text-lg font-semibold text-[var(--color-text-primary)]">
+                Order {selectedOrder.id.slice(0, 8).toUpperCase()}
+              </h3>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {selectedOrder.customerEmail ?? "Guest order"} · {selectedOrder.deliveryPhone}
+              </p>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Placed {new Date(selectedOrder.createdAt).toLocaleString()}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <OrderStatusBadge type="payment" status={selectedOrder.paymentStatus} />
+              <OrderStatusBadge type="delivery" status={selectedOrder.deliveryStatus} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+            <p className="font-medium text-[var(--color-text-primary)]">Delivery address</p>
+            <p className="mt-2 whitespace-pre-line">{selectedOrder.deliveryAddress}</p>
+          </div>
+
+          <OrderSummary order={selectedOrder} />
+
+          <form onSubmit={handleSubmit(onUpdateStatus)} className="space-y-4">
+            <AdminFormField label="Update delivery status">
+              <select {...register("deliveryStatus")} className={adminInputClass}>
+                {deliveryStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </AdminFormField>
+            {updateError ? <ErrorMessage message={updateError} /> : null}
+            {updateSuccess ? (
+              <p className="text-sm font-medium text-emerald-600">Delivery status updated.</p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? "Saving..." : "Save delivery status"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setSelectedOrder(null)}>
+                Close
+              </Button>
+            </div>
+          </form>
+        </div>
       ) : null}
     </div>
   );

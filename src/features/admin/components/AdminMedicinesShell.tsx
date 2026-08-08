@@ -37,7 +37,7 @@ export function AdminMedicinesShell() {
 
   const { data, error, isLoading, mutate } = useAuthenticatedSWR(
     "admin/pharmacy/medicines",
-    () => listMedicines(),
+    () => listMedicines({ skip: 0, take: 100, inStockOnly: false }),
   );
 
   const {
@@ -166,7 +166,11 @@ export function AdminMedicinesShell() {
       ) : null}
       {error ? <ErrorMessage message="Could not load medicines." /> : null}
       {data ? (
-        <DataTableShell data={data} columns={columns} emptyMessage="No medicines yet." />
+        <DataTableShell
+          data={data.items}
+          columns={columns}
+          emptyMessage="No medicines yet."
+        />
       ) : null}
     </div>
   );
