@@ -16,6 +16,7 @@ import {
   getAmbulanceLiveLocation,
   getAmbulanceLocationTrail,
 } from "@/lib/ambulance/ambulance.api";
+import { formatEstimatedDistance } from "@/lib/ambulance/ambulance.utils";
 import type {
   AmbulanceBooking,
   AmbulanceLiveLocation,
@@ -31,7 +32,8 @@ interface AmbulanceBookingDetailShellProps {
   bookingId: string;
 }
 
-const POLL_INTERVAL_MS = 5000;
+const LOCATION_POLL_INTERVAL_MS = 5000;
+const STATUS_POLL_INTERVAL_MS = 8000;
 
 const timelineSteps = [
   { key: "REQUESTED", label: "Requested" },
@@ -63,6 +65,7 @@ export function AmbulanceBookingDetailShell({
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -117,6 +120,34 @@ export function AmbulanceBookingDetailShell({
     const token = accessToken;
     let isMounted = true;
 
+    async function pollBookingStatus() {
+      try {
+        const data = await getAmbulanceBooking(token, bookingId);
+        if (isMounted) {
+          setBooking(data);
+        }
+      } catch {
+        // Ignore transient polling errors; initial load already handled errors.
+      }
+    }
+
+    pollBookingStatus();
+    const intervalId = window.setInterval(pollBookingStatus, STATUS_POLL_INTERVAL_MS);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [accessToken, booking?.status, bookingId]);
+
+  useEffect(() => {
+    if (!accessToken || !booking || !activeStatuses.has(booking.status)) {
+      return;
+    }
+
+    const token = accessToken;
+    let isMounted = true;
+
     async function pollLocation() {
       try {
         const [location, trail] = await Promise.all([
@@ -135,13 +166,13 @@ export function AmbulanceBookingDetailShell({
     }
 
     pollLocation();
-    const intervalId = window.setInterval(pollLocation, POLL_INTERVAL_MS);
+    const intervalId = window.setInterval(pollLocation, LOCATION_POLL_INTERVAL_MS);
 
     return () => {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [accessToken, booking, bookingId]);
+  }, [accessToken, booking?.status, bookingId]);
 
   async function handleCancel() {
     if (!accessToken || !booking) return;
@@ -150,9 +181,12 @@ export function AmbulanceBookingDetailShell({
     setCancelError(null);
 
     try {
-      const updated = await cancelAmbulanceBooking(accessToken, booking.id);
+      const updated = await cancelAmbulanceBooking(accessToken, booking.id, {
+        cancelReason: cancelReason.trim() || "Patient cancelled the request",
+      });
       setBooking(updated);
       setShowCancelConfirm(false);
+      setCancelReason("");
       setLiveLocation(null);
     } catch (err) {
       setCancelError(mapApiErrorMessage(err, "We could not cancel this request."));
@@ -198,6 +232,10 @@ export function AmbulanceBookingDetailShell({
     : null;
 
   const canCancel = booking.status === "REQUESTED";
+  const formattedDistance =
+    booking.estimatedDistance != null
+      ? formatEstimatedDistance(booking.estimatedDistance)
+      : "";
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
@@ -228,6 +266,11 @@ export function AmbulanceBookingDetailShell({
               <p className="text-2xl font-bold text-[var(--color-primary)]">
                 ৳{Number.parseFloat(booking.estimatedFare).toFixed(0)}
               </p>
+              {formattedDistance ? (
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  {formattedDistance}
+                </p>
+              ) : null}
               <div className="mt-2 flex justify-end">
                 <AmbulanceStatusBadge status={booking.status} />
               </div>
@@ -313,6 +356,16 @@ export function AmbulanceBookingDetailShell({
                 <p className="text-sm text-red-800">
                   Cancel this emergency request? Only possible while status is REQUESTED.
                 </p>
+                <label className="mt-4 block text-sm font-semibold text-red-900">
+                  Reason for cancellation (optional)
+                  <textarea
+                    rows={2}
+                    value={cancelReason}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-red-200 bg-white px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                    placeholder="Patient no longer needs ambulance"
+                  />
+                </label>
                 <div className="mt-4 flex gap-3">
                   <Button
                     type="button"
@@ -325,7 +378,10 @@ export function AmbulanceBookingDetailShell({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowCancelConfirm(false)}
+                    onClick={() => {
+                      setShowCancelConfirm(false);
+                      setCancelReason("");
+                    }}
                     disabled={isCancelling}
                   >
                     Keep request

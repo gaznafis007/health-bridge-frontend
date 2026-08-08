@@ -2,19 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Spinner } from "@/components/ui/Spinner";
+import { AddressSearchField } from "@/features/ambulance/components/AddressSearchField";
 import { createAmbulanceBooking } from "@/lib/ambulance/ambulance.api";
+import {
+  estimateAmbulanceFare,
+  generateAmbulanceIdempotencyKey,
+} from "@/lib/ambulance/ambulance.utils";
 import type {
   AmbulanceBookingFormValues,
   AmbulanceHealthCenter,
   AmbulanceVehicleType,
+  LatLng,
 } from "@/lib/ambulance/ambulance.types";
-import { mapApiErrorMessage } from "@/lib/api/errors";
+import { mapAmbulanceBookingError } from "@/lib/api/errors";
+import { reverseGeocodeCoordinates } from "@/lib/geocoding/geocoding.api";
 
 interface AmbulanceBookingFormProps {
   accessToken: string;
@@ -32,21 +39,21 @@ export function AmbulanceBookingForm({
   healthCenters,
 }: AmbulanceBookingFormProps) {
   const router = useRouter();
-  const pickupCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [showManualCoords, setShowManualCoords] = useState(false);
-  const [pickupLat, setPickupLat] = useState("");
-  const [pickupLng, setPickupLng] = useState("");
-  const [destLat, setDestLat] = useState("");
-  const [destLng, setDestLng] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [pickupCoordinates, setPickupCoordinates] = useState<LatLng | null>(null);
+  const [destinationCoordinates, setDestinationCoordinates] = useState<LatLng | null>(
+    null,
+  );
 
   const {
     register,
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AmbulanceBookingFormValues>({
     defaultValues: {
@@ -64,10 +71,50 @@ export function AmbulanceBookingForm({
   const destinationCenterId = watch("destinationCenterId");
   const originCenterId = watch("originCenterId");
 
-  function handleUseLocation() {
+  const selectedDestinationCenter = healthCenters.find(
+    (center) => center.id === destinationCenterId,
+  );
+
+  const effectiveDestinationCoordinates =
+    destinationCoordinates ??
+    (selectedDestinationCenter
+      ? {
+          lat: selectedDestinationCenter.latitude,
+          lng: selectedDestinationCenter.longitude,
+        }
+      : null);
+
+  const estimatedFarePreview = useMemo(() => {
+    if (!pickupCoordinates || !effectiveDestinationCoordinates) {
+      return null;
+    }
+
+    return estimateAmbulanceFare(pickupCoordinates, effectiveDestinationCoordinates);
+  }, [pickupCoordinates, effectiveDestinationCoordinates]);
+
+  function formatHealthCenterAddress(center: AmbulanceHealthCenter) {
+    return [center.address, center.city, center.state, center.zipCode]
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  function applyHealthCenterToPickup(center: AmbulanceHealthCenter) {
+    setValue("pickupAddress", formatHealthCenterAddress(center), {
+      shouldValidate: true,
+    });
+    setPickupCoordinates({ lat: center.latitude, lng: center.longitude });
+  }
+
+  function applyHealthCenterToDestination(center: AmbulanceHealthCenter) {
+    setValue("destinationAddress", formatHealthCenterAddress(center), {
+      shouldValidate: true,
+    });
+    setDestinationCoordinates({ lat: center.latitude, lng: center.longitude });
+  }
+
+  async function handleUseLocation() {
     if (!navigator.geolocation) {
       setGeoError("Geolocation is not supported in this browser.");
-      setShowManualCoords(true);
       return;
     }
 
@@ -75,20 +122,45 @@ export function AmbulanceBookingForm({
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        pickupCoordsRef.current = {
+      async (position) => {
+        const coordinates = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
-        setPickupLat(String(position.coords.latitude));
-        setPickupLng(String(position.coords.longitude));
-        setIsLocating(false);
+
+        setPickupCoordinates(coordinates);
+
+        try {
+          const result = await reverseGeocodeCoordinates(
+            accessToken,
+            coordinates.lat,
+            coordinates.lng,
+          );
+
+          if (result) {
+            setValue("pickupAddress", result.label, { shouldValidate: true });
+          } else {
+            setValue(
+              "pickupAddress",
+              `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`,
+              { shouldValidate: true },
+            );
+          }
+        } catch {
+          setGeoError(
+            "Your location was detected, but we could not resolve an address. You can edit the pickup address before submitting.",
+          );
+          setValue(
+            "pickupAddress",
+            `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`,
+            { shouldValidate: true },
+          );
+        } finally {
+          setIsLocating(false);
+        }
       },
       () => {
-        setGeoError(
-          "Could not access your location. Enter coordinates manually or try again.",
-        );
-        setShowManualCoords(true);
+        setGeoError("Could not access your location. Enter your pickup address manually.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -97,6 +169,7 @@ export function AmbulanceBookingForm({
 
   async function onSubmit(values: AmbulanceBookingFormValues) {
     setSubmitError(null);
+    setGeoError(null);
 
     if (!values.originCenterId && !values.destinationCenterId) {
       setSubmitError(
@@ -105,31 +178,8 @@ export function AmbulanceBookingForm({
       return;
     }
 
-    const pickupLatitude =
-      pickupCoordsRef.current?.lat ?? Number.parseFloat(pickupLat);
-    const pickupLongitude =
-      pickupCoordsRef.current?.lng ?? Number.parseFloat(pickupLng);
-
-    if (!Number.isFinite(pickupLatitude) || !Number.isFinite(pickupLongitude)) {
-      setSubmitError("Pickup coordinates are required. Use your location or enter them manually.");
-      setShowManualCoords(true);
-      return;
-    }
-
-    const destinationCenter = healthCenters.find(
-      (center) => center.id === values.destinationCenterId,
-    );
-
-    let destinationLatitude = destinationCenter?.latitude;
-    let destinationLongitude = destinationCenter?.longitude;
-
-    if (destLat && destLng) {
-      const parsedLat = Number.parseFloat(destLat);
-      const parsedLng = Number.parseFloat(destLng);
-      if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
-        destinationLatitude = parsedLat;
-        destinationLongitude = parsedLng;
-      }
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = generateAmbulanceIdempotencyKey();
     }
 
     try {
@@ -138,10 +188,14 @@ export function AmbulanceBookingForm({
         {
           pickupAddress: values.pickupAddress.trim(),
           destinationAddress: values.destinationAddress.trim(),
-          pickupLatitude,
-          pickupLongitude,
-          destinationLatitude,
-          destinationLongitude,
+          ...(pickupCoordinates && {
+            pickupLatitude: pickupCoordinates.lat,
+            pickupLongitude: pickupCoordinates.lng,
+          }),
+          ...(effectiveDestinationCoordinates && {
+            destinationLatitude: effectiveDestinationCoordinates.lat,
+            destinationLongitude: effectiveDestinationCoordinates.lng,
+          }),
           vehicleTypeRequired: values.vehicleTypeRequired,
           emergencyType: values.emergencyType.trim(),
           patientCondition: values.patientCondition.trim(),
@@ -149,13 +203,13 @@ export function AmbulanceBookingForm({
           originCenterId: values.originCenterId || undefined,
           destinationCenterId: values.destinationCenterId || undefined,
         },
-        crypto.randomUUID(),
+        idempotencyKeyRef.current,
       );
 
       router.push(`/ambulance/bookings/${booking.id}`);
     } catch (error) {
       setSubmitError(
-        mapApiErrorMessage(error, "We could not submit your emergency request."),
+        mapAmbulanceBookingError(error, "We could not submit your emergency request."),
       );
     }
   }
@@ -176,99 +230,69 @@ export function AmbulanceBookingForm({
           Request emergency ambulance
         </h1>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          Provide pickup details and select at least one registered health center.
+          Enter pickup and destination addresses. The server resolves coordinates and fare
+          when you submit.
         </p>
       </div>
 
       {submitError ? <ErrorMessage message={submitError} /> : null}
       {geoError ? <ErrorMessage message={geoError} /> : null}
 
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="outline" onClick={handleUseLocation} disabled={isLocating}>
-          {isLocating ? (
-            <>
-              <Spinner className="mr-2 h-4 w-4" />
-              Locating...
-            </>
-          ) : (
-            "Use my current location"
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowManualCoords((current) => !current)}
-        >
-          {showManualCoords ? "Hide coordinates" : "Enter coordinates manually"}
-        </Button>
-      </div>
+      <Controller
+        name="pickupAddress"
+        control={control}
+        rules={{ required: "Pickup address is required." }}
+        render={({ field, fieldState }) => (
+          <div className="space-y-3">
+            <AddressSearchField
+              accessToken={accessToken}
+              label="Pickup address"
+              value={field.value}
+              onValueChange={field.onChange}
+              coordinates={pickupCoordinates}
+              onCoordinatesChange={setPickupCoordinates}
+              placeholder="Road 12, Dhanmondi"
+              error={fieldState.error?.message}
+              helperText="Start typing and choose a suggested address, or use your current location."
+            />
 
-      {showManualCoords ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Pickup latitude">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={pickupLat}
-              onChange={(event) => setPickupLat(event.target.value)}
-              className={inputClass(false)}
-              placeholder="23.7461"
-            />
-          </Field>
-          <Field label="Pickup longitude">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={pickupLng}
-              onChange={(event) => setPickupLng(event.target.value)}
-              className={inputClass(false)}
-              placeholder="90.3742"
-            />
-          </Field>
-          <Field label="Destination latitude (optional)">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={destLat}
-              onChange={(event) => setDestLat(event.target.value)}
-              className={inputClass(false)}
-              placeholder="23.8103"
-            />
-          </Field>
-          <Field label="Destination longitude (optional)">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={destLng}
-              onChange={(event) => setDestLng(event.target.value)}
-              className={inputClass(false)}
-              placeholder="90.4125"
-            />
-          </Field>
-        </div>
-      ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleUseLocation}
+              disabled={isLocating || isSubmitting}
+            >
+              {isLocating ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Detecting location...
+                </>
+              ) : (
+                "Use my current location for pickup"
+              )}
+            </Button>
+          </div>
+        )}
+      />
 
-      <Field label="Pickup address" error={errors.pickupAddress?.message}>
-        <input
-          type="text"
-          aria-invalid={!!errors.pickupAddress}
-          className={inputClass(!!errors.pickupAddress)}
-          placeholder="Road 12, Dhanmondi"
-          {...register("pickupAddress", { required: "Pickup address is required." })}
-        />
-      </Field>
-
-      <Field label="Destination address" error={errors.destinationAddress?.message}>
-        <input
-          type="text"
-          aria-invalid={!!errors.destinationAddress}
-          className={inputClass(!!errors.destinationAddress)}
-          placeholder="Apollo Hospital ER"
-          {...register("destinationAddress", {
-            required: "Destination address is required.",
-          })}
-        />
-      </Field>
+      <Controller
+        name="destinationAddress"
+        control={control}
+        rules={{ required: "Destination address is required." }}
+        render={({ field, fieldState }) => (
+          <AddressSearchField
+            accessToken={accessToken}
+            label="Destination address"
+            value={field.value}
+            onValueChange={field.onChange}
+            coordinates={destinationCoordinates}
+            onCoordinatesChange={setDestinationCoordinates}
+            placeholder="Apollo Hospital ER"
+            error={fieldState.error?.message}
+            helperText="Choose a hospital from the list below or type the destination address."
+          />
+        )}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Origin health center (optional)" error={errors.originCenterId?.message}>
@@ -278,7 +302,19 @@ export function AmbulanceBookingForm({
             render={({ field }) => (
               <select
                 value={field.value}
-                onChange={field.onChange}
+                onChange={(event) => {
+                  field.onChange(event);
+                  const center = healthCenters.find(
+                    (item) => item.id === event.target.value,
+                  );
+
+                  if (center) {
+                    applyHealthCenterToPickup(center);
+                    return;
+                  }
+
+                  setPickupCoordinates(null);
+                }}
                 onBlur={field.onBlur}
                 className={inputClass(false)}
               >
@@ -308,10 +344,13 @@ export function AmbulanceBookingForm({
                   const center = healthCenters.find(
                     (item) => item.id === event.target.value,
                   );
+
                   if (center) {
-                    setDestLat(String(center.latitude));
-                    setDestLng(String(center.longitude));
+                    applyHealthCenterToDestination(center);
+                    return;
                   }
+
+                  setDestinationCoordinates(null);
                 }}
                 onBlur={field.onBlur}
                 className={inputClass(false)}
@@ -399,6 +438,13 @@ export function AmbulanceBookingForm({
           {...register("specialRequirements")}
         />
       </Field>
+
+      {estimatedFarePreview != null ? (
+        <p className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-[var(--color-text-primary)]">
+          Estimated fare: ~৳{Math.round(estimatedFarePreview)} — final fare confirmed after
+          booking.
+        </p>
+      ) : null}
 
       <Button type="submit" variant="danger" disabled={isSubmitting} className="w-full sm:w-auto">
         {isSubmitting ? (

@@ -30,10 +30,17 @@ export function GuestSessionBanner({ isReady }: GuestSessionBannerProps) {
           <span className="font-semibold text-[var(--color-text-primary)]">
             You&apos;re shopping as a guest.
           </span>{" "}
+          After checkout you&apos;ll see order status immediately. After your first order, use{" "}
+          <strong className="font-semibold text-[var(--color-text-primary)]">Track Orders</strong>{" "}
+          in the navbar, or{" "}
+          <Link href="/pharmacy/track-order" className="text-[var(--color-primary)] underline">
+            track by phone or order ID
+          </Link>
+          . You can also{" "}
           <Link href="/auth/register" className="text-[var(--color-primary)] underline">
-            Register for an account
+            register for an account
           </Link>{" "}
-          to track your orders anytime and access your prescription history.
+          to save order history.
         </p>
       </div>
       <button

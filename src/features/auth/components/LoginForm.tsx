@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { getDashboardPathForRole } from "@/lib/auth/dashboard-routes";
 import { signinAction } from "@/lib/auth/auth.actions";
 
 interface FormState {
@@ -56,7 +57,11 @@ export function LoginForm() {
 
       setSession(result.data);
       const redirectUrl = searchParams.get("redirect");
-      router.replace(redirectUrl && redirectUrl.startsWith("/") ? redirectUrl : "/");
+      router.replace(
+        redirectUrl && redirectUrl.startsWith("/")
+          ? redirectUrl
+          : getDashboardPathForRole(result.data.user.role),
+      );
     } finally {
       setIsSubmitting(false);
     }

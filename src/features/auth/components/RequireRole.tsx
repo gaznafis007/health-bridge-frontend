@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -18,20 +18,28 @@ interface RequireRoleProps {
 
 export function RequireRole({ allowed, children, redirectTo }: RequireRoleProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated || !user) {
-      router.replace("/auth/login");
+      router.replace(
+        `/auth/login?redirect=${encodeURIComponent(pathname || "/")}`,
+      );
       return;
     }
 
     if (!allowed.includes(user.role)) {
-      router.replace(redirectTo ?? getDashboardPathForRole(user.role));
+      const fallbackRedirect =
+        user.role === "ADMIN" && pathname.startsWith("/pharmacy/orders")
+          ? "/admin/pharmacy/orders"
+          : getDashboardPathForRole(user.role);
+
+      router.replace(redirectTo ?? fallbackRedirect);
     }
-  }, [allowed, isAuthenticated, isLoading, redirectTo, router, user]);
+  }, [allowed, isAuthenticated, isLoading, pathname, redirectTo, router, user]);
 
   if (isLoading) {
     return (

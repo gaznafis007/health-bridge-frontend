@@ -3,13 +3,15 @@ import type {
   Cart,
   CheckoutPayload,
   GuestSession,
-  Medicine,
   MedicineCategory,
   MedicineQuery,
+  MedicinesPage,
   Order,
 } from "@/features/pharmacy/lib/pharmacy.types";
 
 const PHARMACY_PREFIX = "/e-commerce";
+
+export const DEFAULT_MEDICINES_PAGE_SIZE = 20;
 
 export function createGuestSession(): Promise<GuestSession> {
   return apiRequest<GuestSession>(`${PHARMACY_PREFIX}/guest-sessions`, {
@@ -24,10 +26,16 @@ export function listCategories(): Promise<MedicineCategory[]> {
   });
 }
 
-export function listMedicines(query: MedicineQuery = {}): Promise<Medicine[]> {
+export function listMedicines(query: MedicineQuery = {}): Promise<MedicinesPage> {
   const searchParams = new URLSearchParams();
 
-  for (const [key, value] of Object.entries(query)) {
+  const resolvedQuery: MedicineQuery = {
+    skip: query.skip ?? 0,
+    take: query.take ?? DEFAULT_MEDICINES_PAGE_SIZE,
+    ...query,
+  };
+
+  for (const [key, value] of Object.entries(resolvedQuery)) {
     if (value === undefined || value === null || value === "") {
       continue;
     }
@@ -37,7 +45,7 @@ export function listMedicines(query: MedicineQuery = {}): Promise<Medicine[]> {
 
   const suffix = searchParams.size > 0 ? `?${searchParams.toString()}` : "";
 
-  return apiRequest<Medicine[]>(`${PHARMACY_PREFIX}/medicines${suffix}`, {
+  return apiRequest<MedicinesPage>(`${PHARMACY_PREFIX}/medicines${suffix}`, {
     cache: "no-store",
   });
 }
@@ -119,8 +127,24 @@ export function getPatientOrder(
   accessToken: string,
   orderId: string,
 ): Promise<Order> {
-  return apiRequest<Order>(`${PHARMACY_PREFIX}/orders/${orderId}`, {
+  return apiRequest<Order>(`${PHARMACY_PREFIX}/orders/me/${orderId}`, {
     accessToken,
+    cache: "no-store",
+  });
+}
+
+export function getOrdersByPhone(
+  deliveryPhone: string,
+  skip = 0,
+  take = 20,
+): Promise<OrdersPage> {
+  const params = new URLSearchParams({
+    deliveryPhone: deliveryPhone.trim(),
+    skip: String(skip),
+    take: String(take),
+  });
+
+  return apiRequest<OrdersPage>(`${PHARMACY_PREFIX}/orders/by-phone?${params}`, {
     cache: "no-store",
   });
 }

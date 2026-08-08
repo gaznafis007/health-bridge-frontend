@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { CartItem } from "@/features/pharmacy/components/CartItem";
 import { CheckoutForm } from "@/features/pharmacy/components/CheckoutForm";
 import { formatPrice } from "@/features/pharmacy/lib/pharmacy.utils";
@@ -15,6 +16,7 @@ interface CartSidebarProps {
   sessionId: string | null;
   cart: Cart | null;
   isUpdating: boolean;
+  errorMessage?: string | null;
   onClose: () => void;
   onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void>;
   onRemoveItem: (medicineId: string) => Promise<void>;
@@ -26,6 +28,7 @@ export function CartSidebar({
   sessionId,
   cart,
   isUpdating,
+  errorMessage,
   onClose,
   onUpdateQuantity,
   onRemoveItem,
@@ -117,6 +120,12 @@ export function CartSidebar({
             ×
           </button>
         </div>
+
+        {errorMessage ? (
+          <div className="px-5 pt-4">
+            <ErrorMessage message={errorMessage} />
+          </div>
+        ) : null}
 
         {cart && cart.items.length > 0 ? (
           <div className="flex min-h-0 flex-1 flex-col">
