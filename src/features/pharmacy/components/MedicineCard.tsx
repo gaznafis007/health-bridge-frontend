@@ -12,8 +12,8 @@ interface MedicineCardProps {
   medicine: Medicine;
   cart: Cart | null;
   isUpdating: boolean;
-  onAddItem: (medicineId: string, quantity: number) => Promise<void>;
-  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void>;
+  onAddItem: (medicineId: string, quantity: number) => Promise<void | boolean>;
+  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void | boolean>;
 }
 
 export function MedicineCard({

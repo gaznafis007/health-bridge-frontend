@@ -18,8 +18,8 @@ interface CartSidebarProps {
   isUpdating: boolean;
   errorMessage?: string | null;
   onClose: () => void;
-  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void>;
-  onRemoveItem: (medicineId: string) => Promise<void>;
+  onUpdateQuantity: (medicineId: string, quantity: number) => Promise<void | boolean>;
+  onRemoveItem: (medicineId: string) => Promise<void | boolean>;
   onCheckoutSuccess: () => void;
 }
 
