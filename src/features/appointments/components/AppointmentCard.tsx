@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AppointmentStatusBadge } from "@/features/appointments/components/AppointmentStatusBadge";
+import { formatAppointmentFee } from "@/lib/appointments/appointments.utils";
 import type { Appointment } from "@/lib/appointments/appointments.types";
 
 interface AppointmentCardProps {
@@ -24,7 +25,7 @@ export function AppointmentCard({ appointment }: AppointmentCardProps) {
         </div>
         <div className="text-right">
           <p className="text-lg font-bold text-[var(--color-primary)]">
-            ৳{Number.parseFloat(appointment.fee).toFixed(0)}
+            {formatAppointmentFee(appointment.fee)}
           </p>
           <div className="mt-2 flex justify-end">
             <AppointmentStatusBadge status={appointment.status} />
