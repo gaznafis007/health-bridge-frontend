@@ -9,6 +9,10 @@ import type {
   LabTest,
   PublicReportResponse,
 } from "@/lib/labs/labs.types";
+import {
+  normalizeLabPackages,
+  normalizeLabTests,
+} from "@/lib/labs/labs.utils";
 
 const LAB_PREFIX = "/lab";
 
@@ -23,23 +27,20 @@ export function getCenterTests(
   accessToken: string,
   centerId: string,
 ): Promise<LabTest[]> {
-  return apiRequest<LabTest[]>(`${LAB_PREFIX}/centers/${centerId}/tests`, {
+  return apiRequest<unknown>(`${LAB_PREFIX}/centers/${centerId}/tests`, {
     accessToken,
     cache: "no-store",
-  });
+  }).then(normalizeLabTests);
 }
 
 export function getCenterPackages(
   accessToken: string,
   centerId: string,
 ): Promise<LabPackage[]> {
-  return apiRequest<LabPackage[]>(
-    `${LAB_PREFIX}/centers/${centerId}/packages`,
-    {
-      accessToken,
-      cache: "no-store",
-    },
-  );
+  return apiRequest<unknown>(`${LAB_PREFIX}/centers/${centerId}/packages`, {
+    accessToken,
+    cache: "no-store",
+  }).then(normalizeLabPackages);
 }
 
 export function searchTests(
@@ -47,10 +48,10 @@ export function searchTests(
   query: string,
 ): Promise<LabTest[]> {
   const params = new URLSearchParams({ q: query });
-  return apiRequest<LabTest[]>(`${LAB_PREFIX}/tests/search?${params}`, {
+  return apiRequest<unknown>(`${LAB_PREFIX}/tests/search?${params}`, {
     accessToken,
     cache: "no-store",
-  });
+  }).then(normalizeLabTests);
 }
 
 export function createBooking(
