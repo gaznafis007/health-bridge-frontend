@@ -1,22 +1,17 @@
 import { Suspense } from "react";
 
+import { AuthPageIntro } from "@/features/auth/components/AuthPageIntro";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { Spinner } from "@/components/ui/Spinner";
 
 export default function LoginPage() {
   return (
     <>
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-primary)]">
-          Welcome back
-        </p>
-        <h2 className="font-heading mt-3 text-3xl font-bold text-[var(--color-text-primary)]">
-          Sign in to HealthBridge
-        </h2>
-        <p className="mt-3 text-sm leading-7 text-[var(--color-text-secondary)]">
-          Use your email or phone number to access your account.
-        </p>
-      </div>
+      <AuthPageIntro
+        eyebrow="Welcome back"
+        title="Sign in to HealthBridge"
+        description="Use your email or phone number to access your account."
+      />
 
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />

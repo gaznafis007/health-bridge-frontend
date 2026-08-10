@@ -12,14 +12,32 @@ import {
   type AuthenticatedNavLinkVariant,
 } from "@/lib/auth/dashboard-routes";
 
-export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
+const navButtonBase =
+  "inline-flex min-h-9 items-center justify-center rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+
+const navButtonFocusDefault =
+  "focus-visible:outline-[var(--color-primary)]";
+
+const navButtonFocusOverDark = "focus-visible:outline-white";
+
+type AuthNavVariant = "default" | "overDark";
+
+export function AuthNavActions({
+  onNavigate,
+  variant = "default",
+}: {
+  onNavigate?: () => void;
+  variant?: AuthNavVariant;
+}) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, signout } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const isOverDark = variant === "overDark";
+  const focusClass = isOverDark ? navButtonFocusOverDark : navButtonFocusDefault;
 
   if (isLoading) {
     return (
-      <div className="inline-flex min-h-11 items-center justify-center px-3">
+      <div className="inline-flex min-h-9 items-center justify-center px-2">
         <Spinner />
       </div>
     );
@@ -31,14 +49,18 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/auth/login"
           onClick={onNavigate}
-          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50"
+          className={`${navButtonBase} ${focusClass} ${
+            isOverDark
+              ? "border border-white/40 !text-white hover:bg-white/10"
+              : "border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-cyan-50"
+          }`}
         >
           Login / Register
         </Link>
         <Link
           href="/appointments"
           onClick={onNavigate}
-          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+          className={`${navButtonBase} ${focusClass} bg-[var(--color-primary)] !text-white hover:bg-[var(--color-primary-dark)]`}
         >
           Book Appointment
         </Link>
@@ -67,7 +89,7 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
           key={link.href}
           href={link.href}
           onClick={onNavigate}
-          className={navLinkClassName(link.variant)}
+          className={navLinkClassName(link.variant, isOverDark, focusClass)}
         >
           {link.label}
         </Link>
@@ -75,12 +97,26 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
       <Link
         href="/account"
         onClick={onNavigate}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:bg-slate-50"
+        className={`${navButtonBase} ${focusClass} ${
+          isOverDark
+            ? "border border-white/30 !text-white/90 hover:bg-white/10 hover:!text-white"
+            : "border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-slate-50"
+        }`}
       >
         Account
       </Link>
-      <div className="inline-flex min-h-11 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2">
-        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+      <div
+        className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 py-1.5 ${
+          isOverDark
+            ? "border-white/20 bg-white/10"
+            : "border-[var(--color-border)] bg-white"
+        }`}
+      >
+        <span
+          className={`text-xs font-semibold transition-colors duration-300 ${
+            isOverDark ? "!text-white" : "text-[var(--color-text-primary)]"
+          }`}
+        >
           {user.firstName}
         </span>
         <Badge variant="neutral">{formatRole(user.role)}</Badge>
@@ -89,7 +125,7 @@ export function AuthNavActions({ onNavigate }: { onNavigate?: () => void }) {
         type="button"
         onClick={handleSignOut}
         disabled={isSigningOut}
-        className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:opacity-60"
+        className={`${navButtonBase} ${focusClass} bg-[var(--color-primary)] !text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-60`}
       >
         {isSigningOut ? "Signing out..." : "Sign Out"}
       </button>
@@ -101,13 +137,18 @@ function formatRole(role: string) {
   return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
-const navLinkClassNames: Record<AuthenticatedNavLinkVariant, string> = {
-  default:
-    "inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-slate-50",
-  primary:
-    "inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-sky-50",
-};
+function navLinkClassName(
+  variant: AuthenticatedNavLinkVariant,
+  isOverDark: boolean,
+  focusClass: string,
+) {
+  if (isOverDark) {
+    return variant === "primary"
+      ? `${navButtonBase} ${focusClass} border border-white/40 !text-white hover:bg-white/10`
+      : `${navButtonBase} ${focusClass} border border-white/30 !text-white/90 hover:bg-white/10 hover:!text-white`;
+  }
 
-function navLinkClassName(variant: AuthenticatedNavLinkVariant) {
-  return navLinkClassNames[variant];
+  return variant === "primary"
+    ? `${navButtonBase} ${focusClass} border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-cyan-50`
+    : `${navButtonBase} ${focusClass} border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-slate-50`;
 }

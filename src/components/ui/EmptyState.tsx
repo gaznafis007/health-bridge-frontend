@@ -14,8 +14,8 @@ export function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="surface-card flex flex-col items-center rounded-[2rem] border border-[var(--color-border)] px-6 py-12 text-center">
-      <div className="mb-4 rounded-full bg-sky-100 p-4 text-[var(--color-primary)]">
+    <div className="surface-card flex flex-col items-center rounded-xl px-6 py-12 text-center">
+      <div className="mb-4 rounded-lg bg-cyan-50 p-3 text-[var(--color-primary)]">
         {icon}
       </div>
       <h3 className="font-heading text-xl font-semibold text-[var(--color-text-primary)]">

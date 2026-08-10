@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { signupAction } from "@/lib/auth/auth.actions";
@@ -112,7 +113,7 @@ export function RegisterForm() {
             return (
               <label
                 key={value}
-                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                className={`cursor-pointer rounded-lg border p-4 transition focus-within:ring-2 focus-within:ring-[var(--color-primary)] focus-within:ring-offset-1 ${
                   selected
                     ? "border-[var(--color-primary)] bg-sky-50"
                     : "border-[var(--color-border)] bg-white"
@@ -198,15 +199,15 @@ export function RegisterForm() {
               setForm((current) => ({ ...current, password: event.target.value }))
             }
             aria-invalid={fieldErrors.password ? "true" : "false"}
-            className="min-h-12 w-full rounded-2xl border border-[var(--color-border)] bg-white px-4 pr-12 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
+            className="min-h-11 w-full rounded-md border border-[var(--color-border)] bg-white px-3 pr-11 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
           />
           <button
             type="button"
             onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"
+            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-secondary)] transition hover:bg-slate-50 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? "Hide" : "Show"}
+            <Icon name={showPassword ? "eye-off" : "eye"} className="h-4 w-4" />
           </button>
         </div>
         <p className="mt-2 text-xs text-[var(--color-text-muted)]">
@@ -220,7 +221,7 @@ export function RegisterForm() {
       </div>
 
       {form.role === "DOCTOR" ? (
-        <div className="space-y-5 rounded-[2rem] border border-[var(--color-border)] bg-slate-50 p-5">
+        <div className="space-y-5 rounded-xl border border-[var(--color-border)] bg-slate-50 p-5">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
             Doctor credentials
           </p>
@@ -256,12 +257,7 @@ export function RegisterForm() {
 
       {submitError ? <ErrorMessage message={submitError} /> : null}
 
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full rounded-2xl"
-        disabled={isSubmitting}
-      >
+      <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? (
           <span className="inline-flex items-center gap-2">
             <Spinner />
@@ -313,7 +309,7 @@ function FormField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={error ? "true" : "false"}
-        className="min-h-12 w-full rounded-2xl border border-[var(--color-border)] bg-white px-4 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
+        className="min-h-11 w-full rounded-md border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
       />
       {hint ? <p className="mt-2 text-xs text-[var(--color-text-muted)]">{hint}</p> : null}
       {error ? (

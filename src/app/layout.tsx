@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans, Plus_Jakarta_Sans, Syne } from "next/font/google";
 
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
@@ -20,6 +20,13 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const syne = Syne({
+  variable: "--font-syne",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "HealthBridge — Your Health, Bridged",
   description:
@@ -34,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${dmSans.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${dmSans.variable} ${syne.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <a

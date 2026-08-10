@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getDashboardPathForRole } from "@/lib/auth/dashboard-routes";
@@ -85,7 +86,7 @@ export function LoginForm() {
             setForm((current) => ({ ...current, identity: event.target.value }))
           }
           aria-invalid={fieldErrors.identity ? "true" : "false"}
-          className="min-h-12 w-full rounded-2xl border border-[var(--color-border)] bg-white px-4 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
+          className="min-h-11 w-full rounded-md border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
         />
         {fieldErrors.identity ? (
           <p role="alert" className="mt-2 text-sm text-red-600">
@@ -111,15 +112,15 @@ export function LoginForm() {
               setForm((current) => ({ ...current, password: event.target.value }))
             }
             aria-invalid={fieldErrors.password ? "true" : "false"}
-            className="min-h-12 w-full rounded-2xl border border-[var(--color-border)] bg-white px-4 pr-12 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)]"
+            className="min-h-11 w-full rounded-md border border-[var(--color-border)] bg-white px-3 pr-11 text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1"
           />
           <button
             type="button"
             onClick={() => setShowPassword((value) => !value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]"
+            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-secondary)] transition hover:bg-slate-50 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? "Hide" : "Show"}
+            <Icon name={showPassword ? "eye-off" : "eye"} className="h-4 w-4" />
           </button>
         </div>
         {fieldErrors.password ? (
@@ -131,12 +132,7 @@ export function LoginForm() {
 
       {submitError ? <ErrorMessage message={submitError} /> : null}
 
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full rounded-2xl"
-        disabled={isSubmitting}
-      >
+      <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? (
           <span className="inline-flex items-center gap-2">
             <Spinner />
