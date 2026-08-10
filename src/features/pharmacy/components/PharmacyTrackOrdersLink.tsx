@@ -12,12 +12,14 @@ interface PharmacyTrackOrdersLinkProps {
   pathname: string;
   onNavigate?: () => void;
   className?: string;
+  variant?: "default" | "overDark";
 }
 
 export function PharmacyTrackOrdersLink({
   pathname,
   onNavigate,
   className,
+  variant = "default",
 }: PharmacyTrackOrdersLinkProps) {
   const [deliveryPhone, setDeliveryPhone] = useState<string | null>(null);
 
@@ -43,6 +45,8 @@ export function PharmacyTrackOrdersLink({
   const href = `/pharmacy/track-order?phone=${encodeURIComponent(deliveryPhone)}`;
   const isActive = pathname.startsWith("/pharmacy/track-order");
 
+  const isOverDark = variant === "overDark";
+
   return (
     <Link
       href={href}
@@ -50,11 +54,15 @@ export function PharmacyTrackOrdersLink({
       aria-current={isActive ? "page" : undefined}
       className={
         className ??
-        `rounded-full px-4 py-2 text-sm font-medium transition hover:bg-sky-50 hover:text-[var(--color-primary)] ${
-          isActive
-            ? "bg-sky-100 text-[var(--color-primary)]"
-            : "text-[var(--color-text-secondary)]"
-        }`
+        (isOverDark
+          ? `rounded-md px-3 py-2 text-sm font-medium transition-colors duration-300 hover:bg-white/10 hover:!text-white ${
+              isActive ? "bg-white/15 !text-white" : "!text-white/90"
+            }`
+          : `rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300 hover:bg-sky-50 hover:text-[var(--color-primary)] ${
+              isActive
+                ? "bg-sky-100 text-[var(--color-primary)]"
+                : "text-[var(--color-text-secondary)]"
+            }`)
       }
     >
       Track Orders

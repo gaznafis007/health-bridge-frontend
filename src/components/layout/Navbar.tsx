@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { Icon } from "@/components/ui/Icon";
 import { AuthNavActions } from "@/features/auth/components/AuthNavActions";
 import { PharmacyTrackOrdersLink } from "@/features/pharmacy/components/PharmacyTrackOrdersLink";
 
@@ -18,14 +19,37 @@ const navigationLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+const SCROLL_THRESHOLD = 24;
+
+function navLinkClass(isActive: boolean, isTransparentNav: boolean) {
+  const base =
+    "rounded-md px-3 py-2 text-sm font-medium transition-colors duration-300";
+
+  if (isTransparentNav) {
+    return `${base} ${
+      isActive
+        ? "bg-white/15 !text-white"
+        : "!text-white/90 hover:bg-white/10 hover:!text-white"
+    }`;
+  }
+
+  return `${base} ${
+    isActive
+      ? "bg-cyan-50 text-[var(--color-primary)]"
+      : "text-[var(--color-text-secondary)] hover:bg-cyan-50 hover:text-[var(--color-primary)]"
+  }`;
+}
+
 export function Navbar() {
   const pathname = usePathname();
-  const [hasShadow, setHasShadow] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const isTransparentNav = pathname === "/" && !isScrolled && !isMenuOpen;
 
   useEffect(() => {
     function handleScroll() {
-      setHasShadow(window.scrollY > 0);
+      setIsScrolled(window.scrollY > SCROLL_THRESHOLD);
     }
 
     handleScroll();
@@ -34,49 +58,63 @@ export function Navbar() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b border-white/60 bg-white/85 backdrop-blur-xl transition-shadow ${
-        hasShadow ? "shadow-[0_18px_45px_rgba(15,23,42,0.12)]" : ""
+      data-nav-theme={isTransparentNav ? "transparent" : "solid"}
+      className={`sticky top-0 z-50 transition-[background-color,box-shadow,border-color,color,backdrop-filter] duration-300 ${
+        isTransparentNav
+          ? "border-b border-transparent bg-transparent text-white"
+          : "border-b border-[var(--color-border)] bg-white/95 text-[var(--color-text-primary)] shadow-sm backdrop-blur-sm"
       }`}
     >
-      <div className="mx-auto flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-[var(--color-primary)]">
-            <LogoMark />
+      <div className="mx-auto flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2.5">
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-300 ${
+              isTransparentNav
+                ? "bg-white/10 text-white"
+                : "bg-cyan-50 text-[var(--color-primary)]"
+            }`}
+          >
+            <Icon name="heart-pulse" className="h-5 w-5" />
           </span>
-          <span className="font-heading text-xl font-bold text-[var(--color-text-primary)]">
+          <span
+            className={`font-heading text-lg font-bold transition-colors duration-300 ${
+              isTransparentNav ? "text-white" : "text-[var(--color-text-primary)]"
+            }`}
+          >
             HealthBridge
           </span>
         </Link>
 
-        <nav aria-label="Main navigation" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main navigation" className="hidden items-center gap-0.5 lg:flex">
           {navigationLinks.map((link) => {
             const isActive =
-              link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
 
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition hover:bg-sky-50 hover:text-[var(--color-primary)] ${
-                  isActive
-                    ? "bg-sky-100 text-[var(--color-primary)]"
-                    : "text-[var(--color-text-secondary)]"
-                }`}
+                className={navLinkClass(isActive, isTransparentNav)}
               >
                 {link.label}
               </Link>
             );
           })}
-          <PharmacyTrackOrdersLink pathname={pathname} />
+          <PharmacyTrackOrdersLink
+            pathname={pathname}
+            variant={isTransparentNav ? "overDark" : "default"}
+          />
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <AuthNavActions />
+          <AuthNavActions variant={isTransparentNav ? "overDark" : "default"} />
         </div>
 
         <button
@@ -84,9 +122,13 @@ export function Navbar() {
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen((value) => !value)}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--color-border)] text-[var(--color-text-primary)] lg:hidden"
+          className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border transition-colors duration-300 lg:hidden ${
+            isTransparentNav
+              ? "border-white/30 text-white hover:bg-white/10"
+              : "border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-slate-50"
+          }`}
         >
-          <MenuIcon open={isMenuOpen} />
+          <Icon name={isMenuOpen ? "x" : "menu"} className="h-5 w-5" />
         </button>
       </div>
 
@@ -94,11 +136,13 @@ export function Navbar() {
         <div className="border-t border-[var(--color-border)] bg-white lg:hidden">
           <nav
             aria-label="Mobile navigation"
-            className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 sm:px-6"
+            className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6"
           >
             {navigationLinks.map((link) => {
               const isActive =
-                link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
 
               return (
                 <Link
@@ -106,10 +150,10 @@ export function Navbar() {
                   href={link.href}
                   aria-current={isActive ? "page" : undefined}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`rounded-2xl px-4 py-3 text-sm font-medium ${
+                  className={`rounded-md px-4 py-2.5 text-sm font-medium transition-colors duration-300 ${
                     isActive
-                      ? "bg-sky-100 text-[var(--color-primary)]"
-                      : "bg-slate-50 text-[var(--color-text-secondary)]"
+                      ? "bg-cyan-50 text-[var(--color-primary)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-slate-50"
                   }`}
                 >
                   {link.label}
@@ -119,54 +163,17 @@ export function Navbar() {
             <PharmacyTrackOrdersLink
               pathname={pathname}
               onNavigate={() => setIsMenuOpen(false)}
-              className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-[var(--color-text-secondary)]"
+              className="rounded-md px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-slate-50"
             />
-            <div className="mt-3 grid gap-3">
-              <AuthNavActions onNavigate={() => setIsMenuOpen(false)} />
+            <div className="mt-3 grid gap-3 border-t border-[var(--color-border)] pt-4">
+              <AuthNavActions
+                variant="default"
+                onNavigate={() => setIsMenuOpen(false)}
+              />
             </div>
           </nav>
         </div>
       ) : null}
     </header>
-  );
-}
-
-function LogoMark() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-6 w-6" fill="none" aria-hidden="true">
-      <path
-        d="M8 29c4.2 0 6.8-9 10-9 3 0 4.8 8 7.8 8 2.6 0 3.5-4 6.2-4 3.5 0 4.8 7 8 7"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 20c0-6.4 5.2-11.5 11.5-11.5 3.1 0 5.9 1.3 7.8 3.3 2-2 4.8-3.3 7.9-3.3 6.3 0 11.4 5.1 11.4 11.5 0 11.4-18.8 18.5-19.3 18.5S9 31.4 9 20Z"
-        stroke="currentColor"
-        strokeWidth="2.4"
-      />
-    </svg>
-  );
-}
-
-function MenuIcon({ open }: { open: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
-      {open ? (
-        <path
-          d="M6 6l12 12M18 6L6 18"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      ) : (
-        <>
-          <path d="M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </>
-      )}
-    </svg>
   );
 }

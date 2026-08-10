@@ -14,7 +14,8 @@
   --color-text-secondary: #64748b;
   --color-text-muted: #94a3b8;
   --shadow-soft: 0 20px 60px rgba(14, 165, 233, 0.12);
-  --shadow-card: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --nav-height: 4rem;
 }
 
 @theme inline {
@@ -33,6 +34,12 @@
   --color-text-muted: var(--color-text-muted);
   --font-sans: var(--font-dm-sans);
   --font-heading: var(--font-plus-jakarta);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
 }
 
 *,
@@ -49,8 +56,8 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 28%),
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 32%),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.06), transparent 28%),
     var(--color-bg);
   color: var(--color-text-primary);
   font-family: var(--font-dm-sans), sans-serif;
@@ -82,18 +89,88 @@ select {
   font-family: var(--font-plus-jakarta), sans-serif;
 }
 
+.font-display {
+  font-family: var(--font-syne), sans-serif;
+}
+
+@keyframes hero-shimmer {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.12;
+  }
+  85% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+}
+
+.hero-shimmer {
+  animation: hero-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes payment-border-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.payment-border-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(14, 165, 233, 0.35) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: payment-border-shimmer 3s ease-in-out 1;
+}
+
+[data-payment-tile] {
+  opacity: 1;
+}
+
+[data-payment-tile] img {
+  display: block;
+  height: auto;
+  max-height: 2.75rem;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  opacity: 1;
+}
+
 .surface-card {
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
 }
 
 .mesh-bg {
   background:
     radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.08), transparent 35%),
-    radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.08), transparent 30%),
-    radial-gradient(circle at 70% 75%, rgba(14, 165, 233, 0.06), transparent 25%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 249, 255, 0.96));
-  animation: mesh-shift 16s ease-in-out infinite alternate;
+    radial-gradient(circle at 80% 10%, rgba(16, 185, 129, 0.06), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.99));
+}
+
+.section-padding {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
 }
 
 .hide-scrollbar {
@@ -117,29 +194,6 @@ select {
   border: 0;
 }
 
-@keyframes mesh-shift {
-  from {
-    background-position: 0% 0%, 100% 0%, 70% 75%, 0% 0%;
-  }
-  to {
-    background-position: 8% 6%, 92% 8%, 64% 82%, 0% 0%;
-  }
-}
-
-@keyframes float-gentle {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.animate-float-gentle {
-  animation: float-gentle 3s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -149,4 +203,158 @@ select {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+@keyframes auth-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-bar-grow {
+  from {
+    transform: scaleX(0.4);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes auth-float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes auth-pulse-ring {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.auth-fade-in {
+  animation: auth-fade-up 0.7s ease both;
+}
+
+.auth-fade-in-1 {
+  animation-delay: 0.05s;
+}
+
+.auth-fade-in-2 {
+  animation-delay: 0.15s;
+}
+
+.auth-fade-in-3 {
+  animation-delay: 0.28s;
+}
+
+.auth-fade-in-4 {
+  animation-delay: 0.42s;
+}
+
+.auth-bar {
+  transform-origin: left center;
+  animation: auth-bar-grow 1.2s ease both;
+}
+
+.auth-bar-1 {
+  animation-delay: 0.5s;
+}
+
+.auth-bar-2 {
+  animation-delay: 0.7s;
+}
+
+.auth-bar-3 {
+  animation-delay: 0.9s;
+}
+
+.auth-float-1 {
+  animation: auth-float-soft 4s ease-in-out infinite;
+}
+
+.auth-float-2 {
+  animation: auth-float-soft 5s ease-in-out infinite 0.6s;
+}
+
+.auth-float-3 {
+  animation: auth-float-soft 4.5s ease-in-out infinite 1.2s;
+}
+
+.auth-pulse-dot {
+  animation: auth-pulse-ring 2.4s ease-in-out infinite;
+}
+
+.auth-plus-mark {
+  animation: auth-pulse-ring 3s ease-in-out infinite;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 38s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.page-fade-in > * {
+  animation: auth-fade-up 0.65s ease both;
+}
+
+.page-fade-in > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.page-fade-in > *:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.page-fade-in > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.journey-step-card.is-active article {
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-2px);
+}
+
+.journey-step-card.is-active .journey-step-icon {
+  transform: scale(1.06);
+}
+
+.journey-step-card article,
+.journey-step-card .journey-step-icon {
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 }
