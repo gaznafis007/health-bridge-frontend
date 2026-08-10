@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
+import { DOCTOR_SPECIALIZATIONS } from "@/lib/appointments/specializations";
 import type { DoctorSearchFormValues, HealthCenter } from "@/lib/appointments/appointments.types";
 
 interface DoctorSearchFormProps {
@@ -12,8 +13,11 @@ interface DoctorSearchFormProps {
   onSubmit: (values: DoctorSearchFormValues) => void;
 }
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
+function localIsoDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function DoctorSearchForm({
@@ -29,7 +33,7 @@ export function DoctorSearchForm({
   } = useForm<DoctorSearchFormValues>({
     defaultValues: {
       specialization: defaultValues?.specialization ?? "",
-      date: defaultValues?.date ?? todayIsoDate(),
+      date: defaultValues?.date ?? localIsoDate(),
       healthCenterId: defaultValues?.healthCenterId ?? "",
     },
   });
@@ -49,28 +53,39 @@ export function DoctorSearchForm({
       </div>
 
       <Field label="Specialization" error={errors.specialization?.message}>
-        <input
-          type="text"
-          placeholder="e.g. Cardiology"
-          aria-invalid={!!errors.specialization}
-          className={inputClass(!!errors.specialization)}
-          {...register("specialization", {
-            required: "Specialization is required.",
-            minLength: { value: 2, message: "Enter at least 2 characters." },
-          })}
+        <Controller
+          name="specialization"
+          control={control}
+          rules={{ required: "Select a specialization." }}
+          render={({ field }) => (
+            <select
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              aria-invalid={!!errors.specialization}
+              className={inputClass(!!errors.specialization)}
+            >
+              <option value="">Select specialization</option>
+              {DOCTOR_SPECIALIZATIONS.map((specialization) => (
+                <option key={specialization} value={specialization}>
+                  {specialization}
+                </option>
+              ))}
+            </select>
+          )}
         />
       </Field>
 
       <Field label="Appointment date" error={errors.date?.message}>
         <input
           type="date"
-          min={todayIsoDate()}
+          min={localIsoDate()}
           aria-invalid={!!errors.date}
           className={inputClass(!!errors.date)}
           {...register("date", {
             required: "Date is required.",
             validate: (value) =>
-              value >= todayIsoDate() || "Date must be today or later.",
+              value >= localIsoDate() || "Date must be today or later.",
           })}
         />
       </Field>

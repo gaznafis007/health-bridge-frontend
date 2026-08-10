@@ -1,4 +1,11 @@
 import { apiRequest } from "@/lib/api/client";
+import {
+  normalizeAppointment,
+  normalizeDoctorDetail,
+  normalizeDoctorSearchResults,
+  normalizeHealthCenters,
+  normalizePaginatedAppointments,
+} from "@/lib/appointments/appointments.utils";
 import type {
   Appointment,
   AvailabilityRule,
@@ -19,10 +26,10 @@ import type {
 const APPOINTMENTS_PREFIX = "/appointments";
 
 export function getHealthCenters(accessToken: string): Promise<HealthCenter[]> {
-  return apiRequest<HealthCenter[]>(`${APPOINTMENTS_PREFIX}/health-centers`, {
+  return apiRequest<unknown>(`${APPOINTMENTS_PREFIX}/health-centers`, {
     accessToken,
     cache: "no-store",
-  });
+  }).then(normalizeHealthCenters);
 }
 
 export function searchDoctors(
@@ -42,10 +49,10 @@ export function searchDoctors(
     searchParams.set("healthCenterId", params.healthCenterId);
   }
 
-  return apiRequest<DoctorSearchResult[]>(
+  return apiRequest<unknown>(
     `${APPOINTMENTS_PREFIX}/doctors/search?${searchParams}`,
     { accessToken, cache: "no-store" },
-  );
+  ).then(normalizeDoctorSearchResults);
 }
 
 export function getDoctorDetail(
@@ -59,20 +66,26 @@ export function getDoctorDetail(
     searchParams.set("healthCenterId", params.healthCenterId);
   }
 
-  return apiRequest<DoctorDetail>(
+  return apiRequest<unknown>(
     `${APPOINTMENTS_PREFIX}/doctors/${doctorUserId}?${searchParams}`,
     { accessToken, cache: "no-store" },
-  );
+  ).then(normalizeDoctorDetail);
 }
 
 export function bookAppointment(
   accessToken: string,
   payload: CreateAppointmentPayload,
 ): Promise<Appointment> {
-  return apiRequest<Appointment>(APPOINTMENTS_PREFIX, {
+  return apiRequest<unknown>(APPOINTMENTS_PREFIX, {
     method: "POST",
     accessToken,
     body: payload,
+  }).then((response) => {
+    const appointment = normalizeAppointment(response);
+    if (!appointment) {
+      throw new Error("Invalid appointment response.");
+    }
+    return appointment;
   });
 }
 
@@ -86,10 +99,10 @@ export function getMyAppointments(
     take: String(take),
   });
 
-  return apiRequest<Paginated<Appointment>>(
+  return apiRequest<unknown>(
     `${APPOINTMENTS_PREFIX}/me/patient?${params}`,
     { accessToken, cache: "no-store" },
-  );
+  ).then(normalizePaginatedAppointments);
 }
 
 export function cancelAppointment(
@@ -97,14 +110,20 @@ export function cancelAppointment(
   appointmentId: string,
   reason?: string,
 ): Promise<Appointment> {
-  return apiRequest<Appointment>(
+  return apiRequest<unknown>(
     `${APPOINTMENTS_PREFIX}/${appointmentId}/cancel`,
     {
       method: "PATCH",
       accessToken,
       body: reason ? { reason } : {},
     },
-  );
+  ).then((response) => {
+    const appointment = normalizeAppointment(response);
+    if (!appointment) {
+      throw new Error("Invalid appointment response.");
+    }
+    return appointment;
+  });
 }
 
 export function getVisitNote(
