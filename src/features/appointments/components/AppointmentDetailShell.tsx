@@ -18,6 +18,7 @@ import {
   getPrescription,
   getVisitNote,
 } from "@/lib/appointments/appointments.api";
+import { formatAppointmentFee } from "@/lib/appointments/appointments.utils";
 import type {
   Appointment,
   CancelAppointmentFormValues,
@@ -208,10 +209,7 @@ export function AppointmentDetailShell({
               label="Health center"
               value={appointment.healthCenter?.name ?? "—"}
             />
-            <InfoItem
-              label="Fee"
-              value={`৳${Number.parseFloat(appointment.fee).toFixed(0)}`}
-            />
+            <InfoItem label="Fee" value={formatAppointmentFee(appointment.fee)} />
             {appointment.reasonForVisit ? (
               <InfoItem
                 label="Reason for visit"
